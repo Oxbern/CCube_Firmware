@@ -12,20 +12,20 @@ void _exit(int n) {
 label: goto label;       /* plz don't kill me */
 }
 
-extern char *end;
-extern char *_estack;
-static char *heap_ptr;
+static char *_heap_start = (char *)0xC0177000;
+static char *_heap_end = (char *)(0xC0177000+2048*4);
+static char *heap_ptr = NULL;
 
 void * _sbrk_r(struct _reent *_s_r, ptrdiff_t nbytes)
 {
 	char  *base;		/*  errno should be set to  ENOMEM on error	*/
 
 	if (!heap_ptr) {	/*  Initialize if first time through.		*/
-		heap_ptr = end;
+		heap_ptr = _heap_start;
 	}
 	base = heap_ptr;	/*  Point to end of heap.					*/
 	
-	if (heap_ptr + nbytes > _estack)
+	if (heap_ptr + nbytes > _heap_end)
 	{
 			errno = ENOMEM;
 			return (caddr_t) -1;
@@ -43,11 +43,11 @@ void * _sbrk(ptrdiff_t incr)
 
 /* Initialize if first time through. */
 
-  if (!heap_ptr) heap_ptr = end;
+  if (!heap_ptr) heap_ptr = _heap_start;
 
   base = heap_ptr;      /*  Point to end of heap.                       */
 
-	if (heap_ptr + incr > _estack)
+	if (heap_ptr + incr > _heap_end)
 	{
 			errno = ENOMEM;
 			return (caddr_t) -1;

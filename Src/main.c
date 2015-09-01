@@ -52,6 +52,8 @@
 #include "GUI.h"
 #include "font16.h"
 #include "usbd_cdc.h"
+#include "fatfs.h"
+#include "string.h"
 
 /* USER CODE END Includes */
 
@@ -249,6 +251,7 @@ int main(void)
   MX_FMC_Init();
   MX_LTDC_Init();
   MX_SDIO_SD_Init();
+  MX_FATFS_Init();
 		
   /* USER CODE BEGIN 2 */
   
@@ -272,9 +275,24 @@ int main(void)
   GUI_SetColor(GUI_WHITE);
   GUI_SetFont(GUI_FONT_24_ASCII);
   GUI_SelectLayer(0);
-  GUI_DispString("hello world!");
+  GUI_DispString("CCube version \"suck my weiner you piece of poop\" Crystallography \n");
   //GUI_DispStringHCenterAt("FUCKING FINALLY YOU PIECE OF SHIT", 400, 216);
   //GUI_DrawRoundedFrame(200,216,600,240,5,2);
+
+	  FIL MyFile;
+	if (f_open(&MyFile, "test", FA_READ) != FR_OK)
+	{
+		GUI_DispString("Failed to open file test\n");
+	} else {
+		uint8_t rtext[100];
+		uint32_t bytesread;
+		f_read(&MyFile, rtext, sizeof(rtext), &bytesread);
+		GUI_DispString(rtext);
+	}
+
+	char *my_string = (char*) malloc(sizeof(char)*6);
+	strcpy(my_string, "hello");
+	GUI_DispString(my_string);
 
   /* USER CODE END 2 */
 
@@ -285,8 +303,6 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-  //USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*)"Hello World!\r\n", 15);
-  //USBD_CDC_TransmitPacket(&hUsbDeviceFS);
   HAL_Delay(500);
 
   }
@@ -383,7 +399,7 @@ void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 0;
+  hsd.Init.ClockDiv = 2;
   HAL_SD_Init(&hsd, &SDCardInfo);
 
   HAL_SD_WideBusOperation_Config(&hsd, SDIO_BUS_WIDE_4B);

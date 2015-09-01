@@ -78,6 +78,8 @@ LDSCRIPT = SW4STM32/$(PROJ_NAME)\ Configuration/STM32F429ZITx_FLASH.ld
 
 CFLAGS += -IInc
 SRCS += $(wildcard Src/*.c)
+SRCS += Src/option/syscall.c
+SRCS += Src/option/unicode.c
 
 ##########
 # Rules

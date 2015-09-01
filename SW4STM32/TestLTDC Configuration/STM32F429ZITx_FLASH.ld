@@ -35,16 +35,22 @@ ENTRY(Reset_Handler)
 /* Highest address of the user mode stack */
 _estack = 0x2002FFFF;    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x800;;      /* required amount of heap  */
-_Min_Stack_Size = 0x800;; /* required amount of stack */
+/*_Min_Heap_Size = 0x800;;*/      /* required amount of heap  */
+/*_Min_Stack_Size = 0x800;; */    /* required amount of stack */
+stack_size = 2048;
+heap_size = 2048;
+
 
 /* Specify the memory areas */
 MEMORY
 {
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 2048K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1024K
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 192K
 CCMRAM (rw)      : ORIGIN = 0x10000000, LENGTH = 64K
 }
+
+_stack_start = ORIGIN(RAM)+LENGTH(RAM);
+_stack_end = _stack_start - stack_size;
 
 /* Define output sections */
 SECTIONS
@@ -163,14 +169,14 @@ SECTIONS
   } >RAM
 
   /* User_heap_stack section, used to check that there is enough RAM left */
-  ._user_heap_stack :
+  . = ALIGN(4);
+  .heap :
   {
-    . = ALIGN(4);
-    PROVIDE ( end = . );
-    PROVIDE ( _end = . );
-    . = . + _Min_Heap_Size;
-    . = . + _Min_Stack_Size;
-    . = ALIGN(4);
+	  __heap_start = .;
+	  PROVIDE(_heap_start = __heap_start);
+	  . = . + heap_size;
+	  __heap_end = .;
+	  PROVIDE(_heap_end = __heap_end);
   } >RAM
 
   
