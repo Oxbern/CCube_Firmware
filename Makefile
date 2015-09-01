@@ -110,3 +110,6 @@ burn: proj
 
 gdb:
 	arm-none-eabi-gdb --eval-command="target extended-remote localhost:4242" $(PROJ_NAME).elf
+
+erase:	
+	$(STLINK)/st-flash erase

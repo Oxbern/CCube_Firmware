@@ -51,6 +51,7 @@
 
 #include "GUI.h"
 #include "font16.h"
+#include "usbd_cdc.h"
 
 /* USER CODE END Includes */
 
@@ -58,11 +59,15 @@
 DMA2D_HandleTypeDef hdma2d;
 
 LTDC_HandleTypeDef hltdc;
+
+SD_HandleTypeDef hsd;
+HAL_SD_CardInfoTypedef SDCardInfo;
 //uint32_t tab[200*100];
 
 SDRAM_HandleTypeDef hsdram;
 
 /* USER CODE BEGIN PV */
+extern USBD_HandleTypeDef hUsbDeviceFS;
 uint16_t font_px_w = 11;
 uint16_t font_px_h = 16;
 uint16_t font_tb_offset = 2;
@@ -74,6 +79,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA2D_Init(void);
 static void MX_FMC_Init(void);
 static void MX_LTDC_Init(void);
+static void MX_SDIO_SD_Init(void);
 
 /* USER CODE BEGIN PFP */
 
@@ -242,6 +248,7 @@ int main(void)
   MX_DMA2D_Init();
   MX_FMC_Init();
   MX_LTDC_Init();
+  MX_SDIO_SD_Init();
 		
   /* USER CODE BEGIN 2 */
   
@@ -257,23 +264,17 @@ int main(void)
   for (unsigned i=0 ; i<800*480*4 ; i+=4)
   {
     *(__IO uint32_t*)(SDRAM_BANK_ADDR+i) = 0x00000000;
-    *(__IO uint32_t*)(SDRAM_BANK_ADDR+0x177000+i) = 0x00000000;
   }	
 	
-  if (*(__IO uint32_t*)(SDRAM_BANK_ADDR) != 0x00000000)
-  {
-	HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_5);
-	HAL_Delay(5000);
-  }
-	
-  HAL_LTDC_SetWindowPosition(&hltdc, 0, 0, 0);
+  //HAL_LTDC_SetWindowPosition(&hltdc, 0, 0, 0);
 
   GUI_Init();
   GUI_SetColor(GUI_WHITE);
   GUI_SetFont(GUI_FONT_24_ASCII);
   GUI_SelectLayer(0);
-  GUI_DispStringHCenterAt("FUCKING FINALLY YOU PIECE OF SHIT", 400, 216);
-  GUI_DrawRoundedFrame(200,216,600,240,5,2);
+  GUI_DispString("hello world!");
+  //GUI_DispStringHCenterAt("FUCKING FINALLY YOU PIECE OF SHIT", 400, 216);
+  //GUI_DrawRoundedFrame(200,216,600,240,5,2);
 
   /* USER CODE END 2 */
 
@@ -284,7 +285,8 @@ int main(void)
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
-  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_5);
+  //USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*)"Hello World!\r\n", 15);
+  //USBD_CDC_TransmitPacket(&hUsbDeviceFS);
   HAL_Delay(500);
 
   }
@@ -342,8 +344,8 @@ void SystemClock_Config(void)
   /* LTDC clock frequency = PLLLCDCLK / RCC_PLLSAIDIVR_8 = 48/8 = 6 MHz */
 
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_LTDC;
-  PeriphClkInitStruct.PLLSAI.PLLSAIN = 192;
-  PeriphClkInitStruct.PLLSAI.PLLSAIR = 4;
+  PeriphClkInitStruct.PLLSAI.PLLSAIN = 240;
+  PeriphClkInitStruct.PLLSAI.PLLSAIR = 4;//4;
   PeriphClkInitStruct.PLLSAIDivR = RCC_PLLSAIDIVR_8;
   HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
 
@@ -368,6 +370,23 @@ void MX_DMA2D_Init(void)
   HAL_DMA2D_Init(&hdma2d);
 
   HAL_DMA2D_ConfigLayer(&hdma2d, 1);
+
+}
+
+/* SDIO init function */
+void MX_SDIO_SD_Init(void)
+{
+
+  hsd.Instance = SDIO;
+  hsd.Init.ClockEdge = SDIO_CLOCK_EDGE_RISING;
+  hsd.Init.ClockBypass = SDIO_CLOCK_BYPASS_DISABLE;
+  hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
+  hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
+  hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
+  hsd.Init.ClockDiv = 0;
+  HAL_SD_Init(&hsd, &SDCardInfo);
+
+  HAL_SD_WideBusOperation_Config(&hsd, SDIO_BUS_WIDE_4B);
 
 }
 
