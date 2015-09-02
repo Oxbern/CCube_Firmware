@@ -148,6 +148,7 @@ void putc_at(uint32_t lig, uint32_t col, char c, uint32_t ct, uint32_t cf)
 /* USER CODE BEGIN 0 */
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
+CRC_HandleTypeDef hcrc;
 
 FMC_SDRAM_CommandTypeDef command;
 FMC_SDRAM_TimingTypeDef SDRAM_Timing;
@@ -231,6 +232,12 @@ static void SDRAM_Initialization_Sequence(SDRAM_HandleTypeDef *hsdram, FMC_SDRAM
   HAL_SDRAM_ProgramRefreshRate(hsdram, REFRESH_COUNT); 
 }
 
+static void MX_CRC_Init()
+{
+	hcrc.Instance = CRC;
+	HAL_CRC_Init(&hcrc);
+}
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -255,7 +262,7 @@ int main(void)
   MX_LTDC_Init();
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
- // MX_USB_DEVICE_Init();
+  MX_CRC_Init();
 		
   /* USER CODE BEGIN 2 */
   
@@ -264,36 +271,55 @@ int main(void)
     enable registser should be enabled.
     (DM00089670.pdf page 14)
   */
-  __HAL_RCC_CRC_CLK_ENABLE();
+  //__HAL_RCC_CRC_CLK_ENABLE();
 	
   SDRAM_Initialization_Sequence(&hsdram, &command);
-	
-  for (unsigned i=0 ; i<800*480*4 ; i+=4)
+  
+  for (unsigned i=0 ; i<8388608; i+=4)
   {
     *(__IO uint32_t*)(SDRAM_BANK_ADDR+i) = 0x00000000;
   }	
+
+  MX_USB_DEVICE_Init();
+	
 	
   GUI_Init();
   GUI_SetColor(GUI_WHITE);
   GUI_SetFont(GUI_FONT_24_ASCII);
   GUI_SelectLayer(0);
-  GUI_DispString("CCube version \"suck my weiner you piece of poop\" Crystallography \n");
+  GUI_DispString("CCube v1.4.2 Crystallography \n");
 
-	  FIL MyFile;
+	FIL MyFile;
+
 	if (f_open(&MyFile, "test", FA_READ) != FR_OK)
 	{
-		GUI_DispString("Failed to open file test\n");
+		GUI_DispString("Failed to open file test. Retrying....\n");
+		if (f_open(&MyFile, "test", FA_READ) != FR_OK)
+		{
+			GUI_DispString("Failed to open file test\n");
+		} else {
+			uint32_t bytesread;
+			uint32_t file_size = f_size(&MyFile);
+			char *str = (char *)malloc(file_size);
+			f_read(&MyFile, str, file_size, &bytesread);
+			str[file_size-1]='\0';
+			GUI_DispString("Content of file \"/test\" : ");
+			GUI_DispString(str);
+			GUI_DispNextLine();
+			free(str);
+		}
 	} else {
 		uint32_t bytesread;
 		uint32_t file_size = f_size(&MyFile);
 		char *str = (char *)malloc(file_size);
 		f_read(&MyFile, str, file_size, &bytesread);
 		str[file_size-1]='\0';
+		GUI_DispString("Content of file \"/test\" : ");
 		GUI_DispString(str);
 		GUI_DispNextLine();
 		free(str);
+		f_close(&MyFile);
 	}
-	f_close(&MyFile);
 	if (f_open(&MyFile, "test1", FA_READ) != FR_OK)
 	{
 		GUI_DispString("Failed to open file test\n");
@@ -303,11 +329,12 @@ int main(void)
 		char *str = (char *)malloc(file_size);
 		f_read(&MyFile, str, file_size, &bytesread);
 		str[file_size-1]='\0';
+		GUI_DispString("Content of file \"/test1\" :");
 		GUI_DispString(str);
 		GUI_DispNextLine();
 		free(str);
+		f_close(&MyFile);
 	}
-	f_close(&MyFile);
 	if (f_open(&MyFile, "test2", FA_READ) != FR_OK)
 	{
 		GUI_DispString("Failed to open file test\n");
@@ -317,11 +344,15 @@ int main(void)
 		char *str = (char *)malloc(file_size);
 		f_read(&MyFile, str, file_size, &bytesread);
 		str[file_size-1]='\0';
+		GUI_DispString("Content of file \"/test2\" : ");
 		GUI_DispString(str);
 		GUI_DispNextLine();
 		free(str);
+		f_close(&MyFile);
 	}
-	f_close(&MyFile);
+	
+
+	GUI_DispString(">>> ");
 
   /* USER CODE END 2 */
 
@@ -331,9 +362,12 @@ int main(void)
   {
   /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
-//	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*)"Hello World!\r\n", 15);
-//	USBD_CDC_TransmitPacket(&hUsbDeviceFS);
-	HAL_Delay(200);
+	/*
+	GUI_DispString("Sending stuff on usb...\n");
+	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*)"Hello World!\r\n", 15);
+	USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+	*/
+	HAL_Delay(500);
   }
   /* USER CODE END 3 */
 
@@ -428,7 +462,7 @@ void MX_SDIO_SD_Init(void)
   hsd.Init.ClockPowerSave = SDIO_CLOCK_POWER_SAVE_DISABLE;
   hsd.Init.BusWide = SDIO_BUS_WIDE_1B;
   hsd.Init.HardwareFlowControl = SDIO_HARDWARE_FLOW_CONTROL_DISABLE;
-  hsd.Init.ClockDiv = 2;
+  hsd.Init.ClockDiv = 4;
   HAL_SD_Init(&hsd, &SDCardInfo);
 
   HAL_SD_WideBusOperation_Config(&hsd, SDIO_BUS_WIDE_4B);

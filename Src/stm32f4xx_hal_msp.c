@@ -58,6 +58,21 @@ void HAL_MspInit(void)
   /* USER CODE END MspInit 1 */
 }
 
+void HAL_CRC_MspInit(CRC_HandleTypeDef* hcrc)
+{
+	if(hcrc->Instance==CRC)
+	{
+		__CRC_CLK_ENABLE();
+	}
+}
+void HAL_CRC_MspDeInit(CRC_HandleTypeDef* hcrc)
+{
+	if(hcrc->Instance==CRC)
+	{
+		__CRC_CLK_DISABLE();
+	}
+}
+
 void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
