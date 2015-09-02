@@ -12,13 +12,13 @@ void _exit(int n) {
 label: goto label;       /* plz don't kill me */
 }
 
-static char *_heap_start = (char *)0xC0177000;
-static char *_heap_end = (char *)(0xC0177000+2048*4);
-static char *heap_ptr = NULL;
+static caddr_t _heap_start = (caddr_t)0xC0177000;
+static caddr_t _heap_end = (caddr_t)(0xC0177000+0x500000); /* 5 Mo */
+static caddr_t heap_ptr = (caddr_t)NULL;
 
 void * _sbrk_r(struct _reent *_s_r, ptrdiff_t nbytes)
 {
-	char  *base;		/*  errno should be set to  ENOMEM on error	*/
+	caddr_t base;		/*  errno should be set to  ENOMEM on error	*/
 
 	if (!heap_ptr) {	/*  Initialize if first time through.		*/
 		heap_ptr = _heap_start;
@@ -32,32 +32,30 @@ void * _sbrk_r(struct _reent *_s_r, ptrdiff_t nbytes)
 	}
 	heap_ptr += nbytes;	/*  Increase heap.							*/
 	
-	return base;		/*  Return pointer to start of new heap area.	*/
+	return (caddr_t)base;		/*  Return pointer to start of new heap area.	*/
 }
 
 
-
+/*
 void * _sbrk(ptrdiff_t incr)
 {
-  char  *base;
-
-/* Initialize if first time through. */
+  void  *base;
 
   if (!heap_ptr) heap_ptr = _heap_start;
 
-  base = heap_ptr;      /*  Point to end of heap.                       */
+  base = heap_ptr;      
 
-	if (heap_ptr + incr > _heap_end)
-	{
-			errno = ENOMEM;
-			return (caddr_t) -1;
-	}
+  if (heap_ptr + incr > _heap_end)
+  {
+		errno = ENOMEM;
+		return (caddr_t) -1;
+  }
   
-  heap_ptr += incr;     /*  Increase heap.                              */
+  heap_ptr += incr;     
 
-  return base;          /*  Return pointer to start of new heap area.   */
+  return base;
 }
-
+*/
 
 int _close(int file)
 {

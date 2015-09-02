@@ -54,6 +54,7 @@
 #include "usbd_cdc.h"
 #include "fatfs.h"
 #include "string.h"
+#include "usb_device.h"
 
 /* USER CODE END Includes */
 
@@ -145,6 +146,8 @@ void putc_at(uint32_t lig, uint32_t col, char c, uint32_t ct, uint32_t cf)
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+extern USBD_HandleTypeDef hUsbDeviceFS;
 
 FMC_SDRAM_CommandTypeDef command;
 FMC_SDRAM_TimingTypeDef SDRAM_Timing;
@@ -252,6 +255,7 @@ int main(void)
   MX_LTDC_Init();
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
+ // MX_USB_DEVICE_Init();
 		
   /* USER CODE BEGIN 2 */
   
@@ -269,30 +273,55 @@ int main(void)
     *(__IO uint32_t*)(SDRAM_BANK_ADDR+i) = 0x00000000;
   }	
 	
-  //HAL_LTDC_SetWindowPosition(&hltdc, 0, 0, 0);
-
   GUI_Init();
   GUI_SetColor(GUI_WHITE);
   GUI_SetFont(GUI_FONT_24_ASCII);
   GUI_SelectLayer(0);
   GUI_DispString("CCube version \"suck my weiner you piece of poop\" Crystallography \n");
-  //GUI_DispStringHCenterAt("FUCKING FINALLY YOU PIECE OF SHIT", 400, 216);
-  //GUI_DrawRoundedFrame(200,216,600,240,5,2);
 
 	  FIL MyFile;
 	if (f_open(&MyFile, "test", FA_READ) != FR_OK)
 	{
 		GUI_DispString("Failed to open file test\n");
 	} else {
-		uint8_t rtext[100];
 		uint32_t bytesread;
-		f_read(&MyFile, rtext, sizeof(rtext), &bytesread);
-		GUI_DispString(rtext);
+		uint32_t file_size = f_size(&MyFile);
+		char *str = (char *)malloc(file_size);
+		f_read(&MyFile, str, file_size, &bytesread);
+		str[file_size-1]='\0';
+		GUI_DispString(str);
+		GUI_DispNextLine();
+		free(str);
 	}
-
-	char *my_string = (char*) malloc(sizeof(char)*6);
-	strcpy(my_string, "hello");
-	GUI_DispString(my_string);
+	f_close(&MyFile);
+	if (f_open(&MyFile, "test1", FA_READ) != FR_OK)
+	{
+		GUI_DispString("Failed to open file test\n");
+	} else {
+		uint32_t bytesread;
+		uint32_t file_size = f_size(&MyFile);
+		char *str = (char *)malloc(file_size);
+		f_read(&MyFile, str, file_size, &bytesread);
+		str[file_size-1]='\0';
+		GUI_DispString(str);
+		GUI_DispNextLine();
+		free(str);
+	}
+	f_close(&MyFile);
+	if (f_open(&MyFile, "test2", FA_READ) != FR_OK)
+	{
+		GUI_DispString("Failed to open file test\n");
+	} else {
+		uint32_t bytesread;
+		uint32_t file_size = f_size(&MyFile);
+		char *str = (char *)malloc(file_size);
+		f_read(&MyFile, str, file_size, &bytesread);
+		str[file_size-1]='\0';
+		GUI_DispString(str);
+		GUI_DispNextLine();
+		free(str);
+	}
+	f_close(&MyFile);
 
   /* USER CODE END 2 */
 
@@ -301,10 +330,10 @@ int main(void)
   while (1)
   {
   /* USER CODE END WHILE */
-
   /* USER CODE BEGIN 3 */
-  HAL_Delay(500);
-
+//	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*)"Hello World!\r\n", 15);
+//	USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+	HAL_Delay(200);
   }
   /* USER CODE END 3 */
 
