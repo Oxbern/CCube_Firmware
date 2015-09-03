@@ -91,6 +91,9 @@ static void MX_SDIO_SD_Init(void);
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 CRC_HandleTypeDef hcrc;
+I2C_HandleTypeDef I2cHandle;
+#define I2Cx                             I2C1
+#define I2C_ADDRESS 0x70
 
 FMC_SDRAM_CommandTypeDef command;
 FMC_SDRAM_TimingTypeDef SDRAM_Timing;
@@ -181,6 +184,26 @@ void Error_Handler(void)
 	printf("Something bad happened :(\n");
 }
 
+void I2C_Config(I2C_HandleTypeDef *I2cHandle)
+{
+	
+  I2cHandle->Instance             = I2Cx;
+  
+  I2cHandle->Init.AddressingMode  = I2C_ADDRESSINGMODE_7BIT;
+  I2cHandle->Init.ClockSpeed      = 400000;
+  I2cHandle->Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  I2cHandle->Init.DutyCycle       = I2C_DUTYCYCLE_16_9;
+  I2cHandle->Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  I2cHandle->Init.NoStretchMode   = I2C_NOSTRETCH_DISABLE;
+  I2cHandle->Init.OwnAddress1     = I2C_ADDRESS;
+  I2cHandle->Init.OwnAddress2     = 0xFE;
+  
+  if(HAL_I2C_Init(I2cHandle) != HAL_OK)
+  {
+    /* Initialization Error */
+    Error_Handler();    
+  }
+}
 
 
 /* USER CODE END 0 */
@@ -208,16 +231,10 @@ int main(void)
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   MX_CRC_Init();
+  I2C_Config(&I2cHandle);
 		
   /* USER CODE BEGIN 2 */
   
-  /* 
-    Before initializing the GUI the CRC mode in RCC peripheral clock
-    enable registser should be enabled.
-    (DM00089670.pdf page 14)
-  */
-  //__HAL_RCC_CRC_CLK_ENABLE();
-	
   SDRAM_Initialization_Sequence(&hsdram, &command);
   
   MX_USB_DEVICE_Init();
@@ -229,7 +246,7 @@ int main(void)
   GUI_SelectLayer(0);
   printf("CCube v1.4.2 Crystallography \n");
   printf("testing I2C :\n");
-
+  uint8_t I2C_RX_Buffer[31];
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -238,7 +255,7 @@ int main(void)
   {
   /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
-	HAL_Delay(500);
+	HAL_Delay(200);
   }
   /* USER CODE END 3 */
 

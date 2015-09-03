@@ -36,6 +36,29 @@
 
 /* USER CODE BEGIN 0 */
 
+#define I2Cx                             I2C1
+#define I2Cx_CLK_ENABLE()                __HAL_RCC_I2C1_CLK_ENABLE()
+#define I2Cx_SDA_GPIO_CLK_ENABLE()       __HAL_RCC_GPIOB_CLK_ENABLE()
+#define I2Cx_SCL_GPIO_CLK_ENABLE()       __HAL_RCC_GPIOB_CLK_ENABLE() 
+
+#define I2Cx_FORCE_RESET()               __HAL_RCC_I2C1_FORCE_RESET()
+#define I2Cx_RELEASE_RESET()             __HAL_RCC_I2C1_RELEASE_RESET()
+
+/* Definition for I2Cx Pins */
+#define I2Cx_SCL_PIN                    GPIO_PIN_6
+#define I2Cx_SCL_GPIO_PORT              GPIOB
+#define I2Cx_SCL_AF                     GPIO_AF4_I2C1
+#define I2Cx_SDA_PIN                    GPIO_PIN_7
+#define I2Cx_SDA_GPIO_PORT              GPIOB
+#define I2Cx_SDA_AF                     GPIO_AF4_I2C1
+#define I2Cx_IT_PIN						GPIO_PIN_5
+#define I2Cx_IT_GPIO_PORT				GPIOB
+#define I2Cx_WAKEUP_PIN					GPIO_PIN_4
+#define I2Cx_WAKEUP_GPIO_PORT			GPIOB
+
+#define I2C_ADDRESS 0x70
+
+#define I2C_TIMEOUT 10000
 /* USER CODE END 0 */
 
 /**
@@ -56,6 +79,49 @@ void HAL_MspInit(void)
   /* USER CODE BEGIN MspInit 1 */
 
   /* USER CODE END MspInit 1 */
+}
+
+
+void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
+{  
+  GPIO_InitTypeDef  GPIO_InitStruct;
+  
+  /*##-1- Enable peripherals and GPIO Clocks #################################*/
+  /* Enable GPIO TX/RX clock */
+  I2Cx_SCL_GPIO_CLK_ENABLE();
+  I2Cx_SDA_GPIO_CLK_ENABLE();
+  /* Enable I2C1 clock */
+  I2Cx_CLK_ENABLE(); 
+  
+  /*##-2- Configure peripheral GPIO ##########################################*/  
+  /* I2C TX GPIO pin configuration  */
+  GPIO_InitStruct.Pin       = I2Cx_SCL_PIN;
+  GPIO_InitStruct.Mode      = GPIO_MODE_AF_OD;
+  GPIO_InitStruct.Pull      = GPIO_PULLUP;
+  GPIO_InitStruct.Speed     = GPIO_SPEED_FAST;
+  GPIO_InitStruct.Alternate = I2Cx_SCL_AF;
+  
+  HAL_GPIO_Init(I2Cx_SCL_GPIO_PORT, &GPIO_InitStruct);
+    
+  /* I2C RX GPIO pin configuration  */
+  GPIO_InitStruct.Pin = I2Cx_SDA_PIN;
+  GPIO_InitStruct.Alternate = I2Cx_SDA_AF;
+    
+  HAL_GPIO_Init(I2Cx_SDA_GPIO_PORT, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = I2Cx_IT_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+
+  HAL_GPIO_Init(I2Cx_IT_GPIO_PORT, &GPIO_InitStruct);
+  
+  GPIO_InitStruct.Pin = I2Cx_WAKEUP_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+
+  HAL_GPIO_Init(I2Cx_WAKEUP_GPIO_PORT, &GPIO_InitStruct);
 }
 
 void HAL_CRC_MspInit(CRC_HandleTypeDef* hcrc)
