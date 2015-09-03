@@ -7,6 +7,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "GUI.h"
+
 
 void _exit(int n) {
 label: goto label;       /* plz don't kill me */
@@ -33,6 +35,18 @@ void * _sbrk_r(struct _reent *_s_r, ptrdiff_t nbytes)
 	heap_ptr += nbytes;	/*  Increase heap.							*/
 	
 	return (caddr_t)base;		/*  Return pointer to start of new heap area.	*/
+}
+
+_ssize_t  _write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt)
+{
+	for (uint32_t i = 0; i < cnt; i++)
+	{
+		char c[2];
+		c[0] = *((char*)buf+i);
+		c[1] = '\0';
+		GUI_DispString(c);
+	}
+	return cnt;
 }
 
 

@@ -56,6 +56,8 @@
 #include "string.h"
 #include "usb_device.h"
 
+#include <stdio.h>
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -71,9 +73,6 @@ SDRAM_HandleTypeDef hsdram;
 
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
-uint16_t font_px_w = 11;
-uint16_t font_px_h = 16;
-uint16_t font_tb_offset = 2;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -85,63 +84,6 @@ static void MX_LTDC_Init(void);
 static void MX_SDIO_SD_Init(void);
 
 /* USER CODE BEGIN PFP */
-
-/**
- * @brief Draws a pixel in the screen framebuffer
- * @param Xpos the pixel's x position
- * @param Ypos the pixel's y position
- * @param RGB_Code the pixel's color
- */
-void Put_Pixel(uint16_t Xpos, uint16_t Ypos, uint32_t ARGB_Code)
-{
-  *(__IO uint32_t*) (0xC0000000 + (4*(Ypos*800 + Xpos))) = ARGB_Code;
-}
-
-/**
- * @brief Renders a glyph from a given array of uint16_t
- * @param glyph pointer to start of the glyph
- * @param width width of the glyph by uint16_t
- * @param height height of the glyph by pixel
- * @param x x position where to put the glyph
- * @param y y position where to put the glyph
- * @param color the glyph's color
- */
-void Render_Glyph(const uint8_t *glyph, uint16_t width, uint16_t height,
-					uint16_t x, uint16_t y, uint32_t ct, uint32_t cf)
-{
-	for (int i = 0; i < height; i++)
-	{
-		for (int j = 0; j < width; j++)
-		{
-			for (int k = 0; k < 8; k++)
-			{
-				if (glyph[i*width+j] & (0x80 >> k))
-				{
-					Put_Pixel(x+8*j+k, y+i, ct);
-				} else {
-					Put_Pixel(x+8*j+k, y+i, cf);
-				}
-			}
-		}
-	}
-}
-
-/**
- * Put a character at the given coordinates
- * @param lig the line
- * @param col the column
- * @param c the character to draw
- * @param cf the background color
- * @param ct the text color
- * @param cl the blinking flag
- */
-void putc_at(uint32_t lig, uint32_t col, char c, uint32_t ct, uint32_t cf)
-{
-	Render_Glyph(&Font16_Table[(c-' ')*font_px_h*font_tb_offset],
-					font_tb_offset, font_px_h,
-					col*font_px_w, lig*font_px_h,
-					ct, cf);
-}
 
 /* USER CODE END PFP */
 
@@ -155,14 +97,10 @@ FMC_SDRAM_TimingTypeDef SDRAM_Timing;
 
 #define SDRAM_BANK_ADDR                 ((uint32_t)0xC0000000)
 
-/* #define SDRAM_MEMORY_WIDTH            FMC_SDRAM_MEM_BUS_WIDTH_8 */
-#define SDRAM_MEMORY_WIDTH            FMC_SDRAM_MEM_BUS_WIDTH_16
-
-/* #define SDCLOCK_PERIOD                   FMC_SDRAM_CLOCK_PERIOD_2 */
-#define SDCLOCK_PERIOD                FMC_SDRAM_CLOCK_PERIOD_3
-
 #define SDRAM_TIMEOUT     ((uint32_t)0xFFFF) 
 
+#define SDRAM_MEMORY_WIDTH FMC_SDRAM_MEM_BUS_WIDTH_16
+#define SDCLOCK_PERIOD     FMC_SDRAM_CLOCK_PERIOD_3
 #define SDRAM_MODEREG_BURST_LENGTH_1             ((uint16_t)0x0000)
 #define SDRAM_MODEREG_BURST_LENGTH_2             ((uint16_t)0x0001)
 #define SDRAM_MODEREG_BURST_LENGTH_4             ((uint16_t)0x0002)
@@ -238,6 +176,13 @@ static void MX_CRC_Init()
 	HAL_CRC_Init(&hcrc);
 }
 
+void Error_Handler(void)
+{
+	printf("Something bad happened :(\n");
+}
+
+
+
 /* USER CODE END 0 */
 
 int main(void)
@@ -275,11 +220,6 @@ int main(void)
 	
   SDRAM_Initialization_Sequence(&hsdram, &command);
   
-  for (unsigned i=0 ; i<8388608; i+=4)
-  {
-    *(__IO uint32_t*)(SDRAM_BANK_ADDR+i) = 0x00000000;
-  }	
-
   MX_USB_DEVICE_Init();
 	
 	
@@ -287,72 +227,8 @@ int main(void)
   GUI_SetColor(GUI_WHITE);
   GUI_SetFont(GUI_FONT_24_ASCII);
   GUI_SelectLayer(0);
-  GUI_DispString("CCube v1.4.2 Crystallography \n");
-
-	FIL MyFile;
-
-	if (f_open(&MyFile, "test", FA_READ) != FR_OK)
-	{
-		GUI_DispString("Failed to open file test. Retrying....\n");
-		if (f_open(&MyFile, "test", FA_READ) != FR_OK)
-		{
-			GUI_DispString("Failed to open file test\n");
-		} else {
-			uint32_t bytesread;
-			uint32_t file_size = f_size(&MyFile);
-			char *str = (char *)malloc(file_size);
-			f_read(&MyFile, str, file_size, &bytesread);
-			str[file_size-1]='\0';
-			GUI_DispString("Content of file \"/test\" : ");
-			GUI_DispString(str);
-			GUI_DispNextLine();
-			free(str);
-		}
-	} else {
-		uint32_t bytesread;
-		uint32_t file_size = f_size(&MyFile);
-		char *str = (char *)malloc(file_size);
-		f_read(&MyFile, str, file_size, &bytesread);
-		str[file_size-1]='\0';
-		GUI_DispString("Content of file \"/test\" : ");
-		GUI_DispString(str);
-		GUI_DispNextLine();
-		free(str);
-		f_close(&MyFile);
-	}
-	if (f_open(&MyFile, "test1", FA_READ) != FR_OK)
-	{
-		GUI_DispString("Failed to open file test\n");
-	} else {
-		uint32_t bytesread;
-		uint32_t file_size = f_size(&MyFile);
-		char *str = (char *)malloc(file_size);
-		f_read(&MyFile, str, file_size, &bytesread);
-		str[file_size-1]='\0';
-		GUI_DispString("Content of file \"/test1\" :");
-		GUI_DispString(str);
-		GUI_DispNextLine();
-		free(str);
-		f_close(&MyFile);
-	}
-	if (f_open(&MyFile, "test2", FA_READ) != FR_OK)
-	{
-		GUI_DispString("Failed to open file test\n");
-	} else {
-		uint32_t bytesread;
-		uint32_t file_size = f_size(&MyFile);
-		char *str = (char *)malloc(file_size);
-		f_read(&MyFile, str, file_size, &bytesread);
-		str[file_size-1]='\0';
-		GUI_DispString("Content of file \"/test2\" : ");
-		GUI_DispString(str);
-		GUI_DispNextLine();
-		free(str);
-		f_close(&MyFile);
-	}
-	
-
-	GUI_DispString(">>> ");
+  printf("CCube v1.4.2 Crystallography \n");
+  printf("testing I2C :\n");
 
   /* USER CODE END 2 */
 
@@ -362,11 +238,6 @@ int main(void)
   {
   /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
-	/*
-	GUI_DispString("Sending stuff on usb...\n");
-	USBD_CDC_SetTxBuffer(&hUsbDeviceFS, (uint8_t*)"Hello World!\r\n", 15);
-	USBD_CDC_TransmitPacket(&hUsbDeviceFS);
-	*/
 	HAL_Delay(500);
   }
   /* USER CODE END 3 */
