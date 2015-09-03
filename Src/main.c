@@ -424,7 +424,7 @@ void SystemClock_Config(void)
 
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_LTDC;
   PeriphClkInitStruct.PLLSAI.PLLSAIN = 240;
-  PeriphClkInitStruct.PLLSAI.PLLSAIR = 4;//4;
+  PeriphClkInitStruct.PLLSAI.PLLSAIR = 4;
   PeriphClkInitStruct.PLLSAIDivR = RCC_PLLSAIDIVR_8;
   HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
 
