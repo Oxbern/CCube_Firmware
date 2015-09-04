@@ -47,6 +47,8 @@
 
 void SysTick_Handler(void);
 void OTG_FS_IRQHandler(void);
+//void I2Cx_EV_IRQHandler(void);
+//void I2Cx_ER_IRQHandler(void);
 
 #ifdef __cplusplus
 }
