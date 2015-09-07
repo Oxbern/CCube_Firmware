@@ -1,5 +1,6 @@
 # Binaries will be generated with this name (.elf, .bin, .hex, etc)
 PROJ_NAME=TestLTDC
+BUILD=build
 
 ##########
 # DEFINES
@@ -55,15 +56,6 @@ SRCS += $(wildcard Drivers/STM32F4xx_HAL_Driver/Src/*.c)
 
 ######## - STM32F4xx Drivers
 
-#################
-# STemWin
-#################
-CFLAGS += -IMiddlewares/GUI/Config
-CFLAGS += -IMiddlewares/GUI/inc
-LIBS   += -LMiddlewares/GUI/Lib
-LDFLAGS += -lSTemWin522_CM4_GCC
-SRCS += $(wildcard Middlewares/GUI/Config/*.c)
-
 ########################
 # specific to STM32F429
 ########################
@@ -72,14 +64,42 @@ DEFS = -DSTM32F429xx
 
 SRCS += Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s
 
-LDSCRIPT = SW4STM32/$(PROJ_NAME)\ Configuration/STM32F429ZITx_FLASH.ld
+LDSCRIPT = flash.ld
 
 ######## - specific to STM32F429
 
-CFLAGS += -IInc
-SRCS += $(wildcard Src/*.c)
-SRCS += Src/option/syscall.c
-SRCS += Src/option/unicode.c
+#################
+# USB
+#################
+CFLAGS += -Iusb/core
+SRCS += $(wildcard usb/core/*.c)
+CFLAGS += -Iusb/class
+SRCS += $(wildcard usb/class/*.c)
+CFLAGS += -Iusb/user
+SRCS += $(wildcard usb/user/*.c)
+
+#################
+# STemWin
+#################
+CFLAGS += -Igui/stemwin/user
+CFLAGS += -Igui/stemwin/inc
+LIBS   += -Lgui/stemwin/lib
+LDFLAGS += -lSTemWin522_CM4_GCC
+SRCS += $(wildcard gui/stemwin/user/*.c)
+
+#################
+# FATFS
+#################
+CFLAGS += -Ifs/fatfs/inc
+SRCS += $(wildcard fs/fatfs/src/*.c)
+SRCS += fs/fatfs/src//option/syscall.c
+SRCS += fs/fatfs/src//option/unicode.c
+
+#################
+# System
+#################
+CFLAGS += -Isystem
+SRCS += $(wildcard system/*.c)
 
 ##########
 # Rules
@@ -96,22 +116,22 @@ $(PROJ_NAME).elf: $(SRCS)
 	@echo "Removing *_template.* files......"
 	@rm -f Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_conf_template.h Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_msp_template.c
 	@echo "Compiling project....."
-	@$(CC) $(CFLAGS) $(DEFS) $(LIBS) $^ -o $@ $(LDFLAGS)
-	@$(OBJCOPY) -O ihex $(PROJ_NAME).elf $(PROJ_NAME).hex
-	@$(OBJCOPY) -O binary $(PROJ_NAME).elf $(PROJ_NAME).bin
+	@$(CC) $(CFLAGS) $(DEFS) $(LIBS) $^ -o $(BUILD)/$@ $(LDFLAGS)
+	@$(OBJCOPY) -O ihex $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).hex
+	@$(OBJCOPY) -O binary $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).bin
 	@echo "DONE"
 
 clean:
 	@echo "Cleaning object files and binaries....."
-	@rm -f *.o $(PROJ_NAME).elf $(PROJ_NAME).hex $(PROJ_NAME).bin
+	@rm -f *.o $(BUILD)/*
 	@echo "DONE"
 
 # Flash the STM32F4
 burn: proj
-	$(STLINK)/st-flash write $(PROJ_NAME).bin 0x8000000
+	$(STLINK)/st-flash write $(BUILD)/$(PROJ_NAME).bin 0x8000000
 
 gdb:
-	arm-none-eabi-gdb --eval-command="target extended-remote localhost:4242" $(PROJ_NAME).elf
+	arm-none-eabi-gdb --eval-command="target extended-remote localhost:4242" $(BUILD)/$(PROJ_NAME).elf
 
 erase:	
 	$(STLINK)/st-flash erase
