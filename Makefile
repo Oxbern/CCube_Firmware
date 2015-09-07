@@ -92,8 +92,8 @@ SRCS += $(wildcard gui/stemwin/user/*.c)
 #################
 CFLAGS += -Ifs/fatfs/inc
 SRCS += $(wildcard fs/fatfs/src/*.c)
-SRCS += fs/fatfs/src//option/syscall.c
-SRCS += fs/fatfs/src//option/unicode.c
+SRCS += fs/fatfs/src/option/syscall.c
+SRCS += fs/fatfs/src/option/unicode.c
 
 #################
 # System
@@ -120,6 +120,9 @@ $(PROJ_NAME).elf: $(SRCS)
 	@$(OBJCOPY) -O ihex $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).hex
 	@$(OBJCOPY) -O binary $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).bin
 	@echo "DONE"
+
+dep:
+	$(CC) $(CFLAGS) $(DEFS) $(LIBS) -M system/main.c $(LDFLAGS)
 
 clean:
 	@echo "Cleaning object files and binaries....."
