@@ -209,6 +209,7 @@ void Error_Handler(void)
 void I2C_Config(I2C_HandleTypeDef *I2cHandle)
 {
 
+  I2Cx_CLK_ENABLE();
   I2cHandle->Instance             = I2Cx;
   
   I2cHandle->Init.AddressingMode  = I2C_ADDRESSINGMODE_7BIT;
@@ -252,14 +253,20 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
   GPIO_InitStruct.Alternate = I2Cx_SDA_AF;
     
   HAL_GPIO_Init(I2Cx_SDA_GPIO_PORT, &GPIO_InitStruct);
-//*
+
   GPIO_InitStruct.Pin = I2Cx_IT_PIN;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
 
   HAL_GPIO_Init(I2Cx_IT_GPIO_PORT, &GPIO_InitStruct);
-//*/
+  
+  GPIO_InitStruct.Pin = I2Cx_WAKEUP_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+
+  HAL_GPIO_Init(I2Cx_WAKEUP_GPIO_PORT, &GPIO_InitStruct);
 }
 
 const char *b2b(int x)
@@ -305,7 +312,7 @@ int main(void)
   
   SDRAM_Initialization_Sequence(&hsdram, &command);
   
-  MX_USB_DEVICE_Init();
+  //MX_USB_DEVICE_Init();
 	
   GUI_Init();
   GUI_SetColor(GUI_WHITE);
@@ -318,38 +325,17 @@ int main(void)
 
   uint8_t normalOP = 0x00;
   
-//*
-  GPIO_InitTypeDef  GPIO_InitStruct;
-  GPIO_InitStruct.Pin = I2Cx_WAKEUP_PIN;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_I2C_MspInit(&I2cHandle);
 
-  HAL_GPIO_Init(I2Cx_WAKEUP_GPIO_PORT, &GPIO_InitStruct);
-  
   HAL_GPIO_WritePin(I2Cx_WAKEUP_GPIO_PORT, I2Cx_WAKEUP_PIN, GPIO_PIN_SET);
   HAL_GPIO_WritePin(I2Cx_WAKEUP_GPIO_PORT, I2Cx_WAKEUP_PIN, GPIO_PIN_RESET);
-//*/
-  HAL_I2C_MspInit(&I2cHandle);
-  I2Cx_CLK_ENABLE();
+
   I2C_Config(&I2cHandle);
   
   HAL_Delay(5);
   
   HAL_GPIO_WritePin(I2Cx_WAKEUP_GPIO_PORT, I2Cx_WAKEUP_PIN, GPIO_PIN_SET);
   HAL_Delay(400); 
-//*/
-/*
-  while (HAL_I2C_Master_Transmit(&I2cHandle, (uint16_t)I2C_ADDRESS, &normalOP, 1, I2C_TIMEOUT) != HAL_OK)
-  {
-	  if (HAL_I2C_GetError(&I2cHandle) != HAL_I2C_ERROR_AF)
-	  {
-		  printf("Time out occured failed to write stuff :(\n");
-		  Error_Handler();
-	  }
-  }
-  printf("Initialisation done\n");
-//*/
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -389,7 +375,10 @@ int main(void)
 	if (HAL_GPIO_ReadPin(I2Cx_IT_GPIO_PORT, I2Cx_IT_PIN) == GPIO_PIN_RESET)
 	{
 		printf("touch!\n");	
-		HAL_I2C_Master_Receive(&I2cHandle, (uint16_t)I2C_ADDRESS, (uint8_t*)I2C_RX_Buffer, 0x06, I2C_TIMEOUT);
+		if (HAL_I2C_Master_Receive(&I2cHandle, (uint16_t)I2C_ADDRESS, (uint8_t*)I2C_RX_Buffer, 0x1F, I2C_TIMEOUT) != HAL_OK)
+		{
+			printf("not ok ;_;\n");
+		}
 		uint32_t i = 3;
 		uint16_t x = (((uint16_t)(I2C_RX_Buffer[i] & 0x0F)) << 8) | ((uint16_t)I2C_RX_Buffer[i+1]);
 		uint16_t y = (((uint16_t)(I2C_RX_Buffer[i+2] & 0x0F)) << 8) | ((uint16_t)I2C_RX_Buffer[i+3]);
@@ -398,7 +387,7 @@ int main(void)
 //*/
 	/* USER CODE END WHILE */
 	  /* USER CODE BEGIN 3 */
-	  HAL_Delay(40);
+	  //HAL_Delay(40);
   }
   /* USER CODE END 3 */
 
