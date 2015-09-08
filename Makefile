@@ -27,7 +27,7 @@ CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
 CFLAGS += -I.
 CFLAGS += -I/usr/arm-none-eabi/lib
 
-CFLAGS += -lrdimon #--specs=rdimon.specs 
+CFLAGS += -lrdimon
 CFLAGS += $(DEFINES)
 
 ######## - COMMON CFLAGS
@@ -35,7 +35,6 @@ CFLAGS += $(DEFINES)
 #########
 # ARM DEF
 #########
-#CFLAGS += -IDrivers/CMSIS/Include/
 CFLAGS += -Icmsis
 ######## - ARM DEF
 
@@ -43,14 +42,10 @@ CFLAGS += -Icmsis
 # STM32F4xx Drivers
 ##################
 
-#CFLAGS += -IDrivers/CMSIS/Device/ST/STM32F4xx/Include
 CFLAGS += -Icmsis/stm32f4xx
-#SRCS += Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
 SRCS += cmsis/stm32f4xx/system_stm32f4xx.c
 
-#CFLAGS += -IDrivers/STM32F4xx_HAL_Driver/Inc
 CFLAGS += -Ihal/inc
-#SRCS += $(wildcard Drivers/STM32F4xx_HAL_Driver/Src/*.c)
 SRCS += $(wildcard hal/src/*.c)
 
 ######## - STM32F4xx Drivers
@@ -61,7 +56,6 @@ SRCS += $(wildcard hal/src/*.c)
 
 DEFS = -DSTM32F429xx
 
-#SRCS += Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s
 SRCS += cmsis/stm32f4xx/startup_stm32f429xx.s
 
 LDSCRIPT = flash.ld
@@ -131,7 +125,7 @@ all: proj
 proj: $(PROJ_NAME).elf
 
 $(PROJ_NAME).elf: $(SRCS)
-	@echo "Compiling project....."
+	@echo "Compiling project..."
 	@$(CC) $(CFLAGS) $(DEFS) $(LIBS) $^ -o $(BUILD)/$@ $(LDFLAGS)
 	@$(OBJCOPY) -O ihex $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).hex
 	@$(OBJCOPY) -O binary $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).bin
@@ -141,7 +135,7 @@ dep:
 	$(CC) $(CFLAGS) $(DEFS) $(LIBS) -M system/main.c $(LDFLAGS)
 
 clean:
-	@echo "Cleaning object files and binaries....."
+	@echo "Cleaning object files and binaries..."
 	@rm -f *.o $(BUILD)/*
 	@echo "DONE"
 
