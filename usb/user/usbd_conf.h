@@ -42,6 +42,7 @@
 #include <string.h>
 #include "stm32f4xx.h"
 #include "stm32f4xx_hal.h"
+#include "FreeRTOS.h"
 
 /** @addtogroup USBD_OTG_DRIVER
   * @{
@@ -83,8 +84,8 @@
   */ 
 
  /* Memory management macros */   
-#define USBD_malloc               malloc
-#define USBD_free                 free
+#define USBD_malloc               pvPortMalloc
+#define USBD_free                 vPortFree
 #define USBD_memset               memset
 #define USBD_memcpy               memcpy
 

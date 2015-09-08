@@ -47,6 +47,8 @@
 #include "crc.h"
 #include "sd.h"
 #include "spi.h"
+#include "tim.h"
+#include "adc.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -98,15 +100,14 @@ int main(void)
   GUI_Init();
   I2C_Init();
   SPI_Init();
+  TIM_Init();
+  ADC_Init();
 		
   /* USER CODE BEGIN 2 */
   
   GUI_SetColor(GUI_WHITE);
   GUI_SetFont(GUI_FONT_24_ASCII);
   GUI_SelectLayer(0);
-	
-  // Enable TFT
-  HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_SET);
 
   printf("CCube alpha v1.0 Crystallography \n");
   printf("Initializing FreeRTOS\n");
