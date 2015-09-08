@@ -108,6 +108,12 @@ CFLAGS += -Ifreertos/inc
 SRCS += $(wildcard freertos/src/*.c)
 
 #################
+# LED
+#################
+CFLAGS += -Iled
+SRCS += $(wildcard led/*.c)
+
+#################
 # System
 #################
 CFLAGS += -Isystem
