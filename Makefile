@@ -108,6 +108,12 @@ SRCS += fs/fatfs/src/option/syscall.c
 SRCS += fs/fatfs/src/option/unicode.c
 
 #################
+# FreeRTOS
+#################
+CFLAGS += -Ifreertos/inc
+SRCS += $(wildcard freertos/src/*.c)
+
+#################
 # System
 #################
 CFLAGS += -Isystem
