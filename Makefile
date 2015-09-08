@@ -79,6 +79,12 @@ CFLAGS += -Iusb/user
 SRCS += $(wildcard usb/user/*.c)
 
 #################
+# LTDC
+#################
+CFLAGS += -Igui
+SRCS += $(wildcard gui/*.c)
+
+#################
 # STemWin
 #################
 CFLAGS += -Igui/stemwin/user
@@ -86,6 +92,12 @@ CFLAGS += -Igui/stemwin/inc
 LIBS   += -Lgui/stemwin/lib
 LDFLAGS += -lSTemWin522_CM4_GCC
 SRCS += $(wildcard gui/stemwin/user/*.c)
+
+#################
+# SDIO
+#################
+CFLAGS += -Ifs
+SRCS += $(wildcard fs/*.c)
 
 #################
 # FATFS

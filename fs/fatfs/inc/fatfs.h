@@ -49,7 +49,7 @@
 extern uint8_t retSD; /* Return value for SD */
 extern char SD_Path[4]; /* SD logical drive path */
 
-void MX_FATFS_Init(void);
+void FATFS_Init(void);
 
 /* USER CODE BEGIN Prototypes */
 
