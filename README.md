@@ -1,5 +1,5 @@
-Cubicle-Firmware
-================
+CCube-Firmware
+==============
 
 Requirements
 ------------
