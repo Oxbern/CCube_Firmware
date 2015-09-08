@@ -268,8 +268,6 @@ int main(void)
 
   uint8_t I2C_RX_Buffer[0x1F];
 
-  uint8_t normalOP = 0x00;
-
   HAL_GPIO_WritePin(I2Cx_WAKEUP_GPIO_PORT, I2Cx_WAKEUP_PIN, GPIO_PIN_SET);
   HAL_GPIO_WritePin(I2Cx_WAKEUP_GPIO_PORT, I2Cx_WAKEUP_PIN, GPIO_PIN_RESET);
 

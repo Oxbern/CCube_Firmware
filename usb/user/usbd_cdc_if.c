@@ -250,7 +250,7 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 		GUI_DispString(">>> ");
 	} else {
 		buff_TX[*Len] = '\0';
-		GUI_DispString(buff_TX);
+		GUI_DispString((const char *)buff_TX);
 	}
 	
 	USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);

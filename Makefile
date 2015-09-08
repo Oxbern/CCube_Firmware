@@ -3,12 +3,6 @@ PROJ_NAME=TestLTDC
 BUILD=build
 
 ##########
-# DEFINES
-##########
-#DEFINES = -DJSMN_PARENT_LINKS -DUSE_USB_FS
-######## - DEFINES
-
-##########
 # STLINK
 ##########
 STLINK=/home/elkhadiy/stlink
@@ -41,18 +35,23 @@ CFLAGS += $(DEFINES)
 #########
 # ARM DEF
 #########
-CFLAGS += -IDrivers/CMSIS/Include/
+#CFLAGS += -IDrivers/CMSIS/Include/
+CFLAGS += -Icmsis
 ######## - ARM DEF
 
 ##################
 # STM32F4xx Drivers
 ##################
 
-CFLAGS += -IDrivers/CMSIS/Device/ST/STM32F4xx/Include
-SRCS += Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
+#CFLAGS += -IDrivers/CMSIS/Device/ST/STM32F4xx/Include
+CFLAGS += -Icmsis/stm32f4xx
+#SRCS += Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
+SRCS += cmsis/stm32f4xx/system_stm32f4xx.c
 
-CFLAGS += -IDrivers/STM32F4xx_HAL_Driver/Inc
-SRCS += $(wildcard Drivers/STM32F4xx_HAL_Driver/Src/*.c)
+#CFLAGS += -IDrivers/STM32F4xx_HAL_Driver/Inc
+CFLAGS += -Ihal/inc
+#SRCS += $(wildcard Drivers/STM32F4xx_HAL_Driver/Src/*.c)
+SRCS += $(wildcard hal/src/*.c)
 
 ######## - STM32F4xx Drivers
 
@@ -62,7 +61,8 @@ SRCS += $(wildcard Drivers/STM32F4xx_HAL_Driver/Src/*.c)
 
 DEFS = -DSTM32F429xx
 
-SRCS += Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s
+#SRCS += Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f429xx.s
+SRCS += cmsis/stm32f4xx/startup_stm32f429xx.s
 
 LDSCRIPT = flash.ld
 
@@ -113,8 +113,6 @@ all: proj
 proj: $(PROJ_NAME).elf
 
 $(PROJ_NAME).elf: $(SRCS)
-	@echo "Removing *_template.* files......"
-	@rm -f Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_conf_template.h Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_msp_template.c
 	@echo "Compiling project....."
 	@$(CC) $(CFLAGS) $(DEFS) $(LIBS) $^ -o $(BUILD)/$@ $(LDFLAGS)
 	@$(OBJCOPY) -O ihex $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).hex

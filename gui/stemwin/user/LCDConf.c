@@ -195,8 +195,8 @@ int LCD_X_DisplayDriver(unsigned LayerIndex, unsigned Cmd, void * pData) {
     // Required for setting the address of the video RAM for drivers
     // with memory mapped video RAM which is passed in the 'pVRAM' element of p
     //
-    LCD_X_SETVRAMADDR_INFO * p;
-    p = (LCD_X_SETVRAMADDR_INFO *)pData;
+    // LCD_X_SETVRAMADDR_INFO * p;
+    // p = (LCD_X_SETVRAMADDR_INFO *)pData;
     //...
     return 0;
   }
@@ -204,8 +204,8 @@ int LCD_X_DisplayDriver(unsigned LayerIndex, unsigned Cmd, void * pData) {
     //
     // Required for setting the display origin which is passed in the 'xPos' and 'yPos' element of p
     //
-    LCD_X_SETORG_INFO * p;
-    p = (LCD_X_SETORG_INFO *)pData;
+    // LCD_X_SETORG_INFO * p;
+    // p = (LCD_X_SETORG_INFO *)pData;
     //...
     return 0;
   }
@@ -213,8 +213,8 @@ int LCD_X_DisplayDriver(unsigned LayerIndex, unsigned Cmd, void * pData) {
     //
     // Required if multiple buffers are used. The 'Index' element of p contains the buffer index.
     //
-    LCD_X_SHOWBUFFER_INFO * p;
-    p = (LCD_X_SHOWBUFFER_INFO *)pData;
+    // LCD_X_SHOWBUFFER_INFO * p;
+    // p = (LCD_X_SHOWBUFFER_INFO *)pData;
     //...
     return 0;
   }
@@ -222,8 +222,8 @@ int LCD_X_DisplayDriver(unsigned LayerIndex, unsigned Cmd, void * pData) {
     //
     // Required for setting a lookup table entry which is passed in the 'Pos' and 'Color' element of p
     //
-    LCD_X_SETLUTENTRY_INFO * p;
-    p = (LCD_X_SETLUTENTRY_INFO *)pData;
+    // LCD_X_SETLUTENTRY_INFO * p;
+    // p = (LCD_X_SETLUTENTRY_INFO *)pData;
     //...
     return 0;
   }
