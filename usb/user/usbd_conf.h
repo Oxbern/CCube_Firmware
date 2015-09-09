@@ -84,8 +84,8 @@
   */ 
 
  /* Memory management macros */   
-#define USBD_malloc               pvPortMalloc
-#define USBD_free                 vPortFree
+#define USBD_malloc               malloc
+#define USBD_free                 free
 #define USBD_memset               memset
 #define USBD_memcpy               memcpy
 
