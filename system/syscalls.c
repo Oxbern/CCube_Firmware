@@ -8,6 +8,7 @@
 #include <sys/types.h>
 
 #include "GUI.h"
+#include "console.h"
 
 
 void _exit(int n) {
@@ -39,6 +40,7 @@ void * _sbrk_r(struct _reent *_s_r, ptrdiff_t nbytes)
 
 _ssize_t  _write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt)
 {
+	/*
 	for (uint32_t i = 0; i < cnt; i++)
 	{
 		char c[2];
@@ -46,6 +48,9 @@ _ssize_t  _write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt)
 		c[1] = '\0';
 		GUI_DispString(c);
 	}
+	*/
+	console_write((char*)buf, cnt);
+	console_disp();
 	return cnt;
 }
 
@@ -142,5 +147,15 @@ int _fork(void)
 int _execve(char *name, char **argv, char **env)
 {
 	errno = ENOMEM;
+	return -1;
+}
+
+int _kill(int pid, int sig)
+{
+	return -1;
+}
+
+int _getpid()
+{
 	return -1;
 }

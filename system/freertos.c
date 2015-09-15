@@ -3,16 +3,32 @@
 #include "cmsis_os.h"
 
 #include "stm32f4xx_hal.h"
+#include "GUI.h"
+#include "usbd_cdc.h"
+#include "usb_device.h"
+#include "ltdc.h"
+#include "sdram.h"
+#include "dma2d.h"
 #include "i2c.h"
+#include "crc.h"
+#include "sd.h"
+#include "spi.h"
 #include "tim.h"
 #include "adc.h"
-#include "GUI.h"
+#include "fatfs.h"
+#include "json.h"
+#include "json-builder.h"
+#include "led.h"
 
 #include <stdio.h>
+#include <string.h>
 
 /*
  * Firmware Tasks
  */
+
+osThreadId initTaskHandle;
+void StartInitTask(void const * argument);
 
 osThreadId touchTaskHandle;
 void StartTouchTask(void const * argument);
@@ -20,17 +36,165 @@ void StartTouchTask(void const * argument);
 osThreadId pwmTaskHandle;
 void StartPwmTask(void const * argument);
 
+osThreadId ledTaskHandle;
+void StartLedTask(void const * argument);
+
+osThreadId fsTaskHandle;
+void StartFsTask(void const * argument);
+
 
 /**
  * FreeRTOS Initialisation function
  */
 void FREERTOS_Init(void)
 {
-	osThreadDef(touchTask, StartTouchTask, osPriorityNormal, 0, 1024);
+	osThreadDef(initTask, StartInitTask, osPriorityHigh, 0, 4096);
+	initTaskHandle = osThreadCreate(osThread(initTask), NULL);
+
+}
+/*
+static __IO uint32_t ticks;
+
+void HAL_IncTick(void)
+{
+  ticks++;
+}
+
+void HAL_Delay(volatile uint32_t millis)
+{
+  if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+  {
+	osDelay(millis);
+  } else {
+	uint32_t t = ticks;
+	while((HAL_GetTick() - t) < millis)
+	{
+	}
+  }
+}
+
+void vApplicationTickHook(void)
+{
+	HAL_IncTick();
+}
+
+uint32_t HAL_GetTick(void)
+{
+	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+	{
+		return osKernelSysTick();
+	} else {
+		return ticks;
+	}	
+	
+}
+*/
+void StartInitTask(void const * argument)
+{
+
+	osThreadDef(touchTask, StartTouchTask, osPriorityNormal, 0, 4096);
 	touchTaskHandle = osThreadCreate(osThread(touchTask), NULL);
 
-	osThreadDef(pwmTask, StartPwmTask, osPriorityNormal, 0, 1024);
+	osThreadDef(pwmTask, StartPwmTask, osPriorityNormal, 0, 4096);
 	pwmTaskHandle = osThreadCreate(osThread(pwmTask), NULL);
+
+	osThreadDef(ledTask, StartLedTask, osPriorityNormal, 0, 4096);
+	ledTaskHandle = osThreadCreate(osThread(ledTask), NULL);
+
+	osThreadDef(fsTask, StartFsTask, osPriorityNormal, 0, 4096);
+	fsTaskHandle = osThreadCreate(osThread(fsTask), NULL);
+
+
+    while(1)
+    {
+		osDelay(5000);
+    }
+}
+
+void StartFsTask(void const * argument)
+{
+	printf("Fs task started\n");
+	FIL my_file;
+	char* str;
+	if (f_open(&my_file, "soutenance.ccdb", FA_READ) != FR_OK)
+	{
+		printf("f_open error\n");
+	} else {
+		// kwerky way to get clean file size
+		uint32_t file_size = f_size(&my_file);
+		str = malloc(file_size);
+
+		// read the file in a buffer
+		f_lseek(&my_file, 0);
+		uint32_t bytesread; // TODO check bytesead agains lenght
+		FRESULT res = f_read(&my_file, str, file_size, (UINT*)&bytesread);
+		str[file_size-1] = '\0';
+		f_close(&my_file);
+		if (res != FR_OK)
+		{
+			printf("f_read error\n");
+		} else {
+			//printf("%s\n", str);
+			
+			json_settings settings = {};
+			settings.value_extra = json_builder_extra;  /* space for json-builder state */
+
+			char error[128];
+			json_value * arr = json_parse_ex(&settings, str, strlen(str), error);
+
+			/* Now serialize it again.
+			 
+			char * buf = malloc(json_measure(arr));
+			json_serialize(buf, arr);
+
+			printf("%s\n", buf);
+			*/
+
+			int nb_points = arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.length;
+
+			printf("%i\n", nb_points);
+
+			for (int i = 0; i < nb_points; i++)
+			{
+				printf("[%i,%i,%i]\n",
+						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[0]->u.integer,
+						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[1]->u.integer,
+						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[2]->u.integer
+				);
+				led_set((int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[0]->u.integer,
+						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[1]->u.integer,
+						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[2]->u.integer
+				);
+			}
+			
+		}
+	}
+
+
+
+    while(1)
+    {
+		osDelay(5000);
+    }
+}
+
+extern uint16_t **led_buffer;
+extern SPI_HandleTypeDef hspi1;
+
+void StartLedTask(void const * argument)
+{
+
+	int i = 0;
+    while(1)
+    {
+
+		if (!led_update(i))
+		{
+			printf("Error Trying to update\n");
+		}
+		i = (i+1)%9;
+		osDelay(1);
+    }
 }
 
 /*
@@ -44,6 +208,7 @@ static inline int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out
 
 void StartPwmTask(void const * argument)
 {
+
 	if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3) != HAL_OK)
 	{
 		printf("Error Starting PWM\n");
@@ -52,15 +217,30 @@ void StartPwmTask(void const * argument)
 	TIM_OC_InitTypeDef sConfigOC;
 	uint32_t p = INI_PULSE_LENGTH;
 	uint32_t conval, prescale;
+	char p_str[100];
 
 
 	while(1)
 	{
-		HAL_ADC_Start(&hadc1);
-		HAL_ADC_PollForConversion(&hadc1, 1000);
+		if (HAL_ADC_Start(&hadc1) != HAL_OK)
+		{
+			printf("Error Starting ADC\n");
+		}
+		if (HAL_ADC_PollForConversion(&hadc1, 1000) != HAL_OK)
+		{
+			printf("Error polling ADC convertion\n");
+		}
 		conval = HAL_ADC_GetValue(&hadc1);
-		HAL_ADC_Stop(&hadc1);
- 		prescale = map(conval, 0, 0x0FFF, 0, 100);
+		if (HAL_ADC_Stop(&hadc1) != HAL_OK)
+		{
+			printf("Error Stopping ADC\n");
+		}
+ 		prescale = map(conval, 0, 0x0FFF, 0, 333);
+
+		sprintf(p_str, "map(%x) = %u", (unsigned)conval, (unsigned)prescale);
+
+		//GUI_DispStringAt(p_str, 500, 0);
+
 		if (HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3)!= HAL_OK)
 		{
 			printf("Error Stoping PWM\n");
@@ -81,6 +261,7 @@ void StartPwmTask(void const * argument)
 		// TODO implémentation d'un seuil variable pour la vérification
 		osDelay(500);
 	}
+
 }
 
 
@@ -92,7 +273,7 @@ extern I2C_HandleTypeDef I2cHandle;
 void StartTouchTask(void const * argument)
 {
 	uint8_t I2C_RX_Buffer[0x1F];
-	printf("touch task started\n");
+	printf("Touch task started\n");
     while(1)
     {
 		if (HAL_GPIO_ReadPin(I2Cx_IT_GPIO_PORT, I2Cx_IT_PIN) == GPIO_PIN_RESET)

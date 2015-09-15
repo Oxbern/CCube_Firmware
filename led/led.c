@@ -132,46 +132,44 @@ static uint16_t led_buffer[9][10] = {
 
 inline void led_set(uint8_t x, uint8_t y, uint8_t z)
 {
-	led_buffer[z][y] |= ( 1 << x );
+	led_buffer[z][8-y] |= ( 1 << x );
 }
 
 inline void led_unset(uint8_t x, uint8_t y, uint8_t z)
 {
-	led_buffer[z][y] &= ~( 1 << x );
+	led_buffer[z][8-y] &= ~( 1 << x );
 }
 
 
 inline void led_toggle(uint8_t x, uint8_t y, uint8_t z)
 {
-	led_buffer[z][y] ^= ( 1 << x );
+	led_buffer[z][8-y] ^= ( 1 << x );
 }
 
 
 inline void led_set_state(uint8_t x, uint8_t y, uint8_t z, bool state)
 {
-	led_buffer[z][y] ^= (-state ^ led_buffer[z][y]) & ( 1 << x );
+	led_buffer[z][8-y] ^= (-state ^ led_buffer[z][8-y]) & ( 1 << x );
 }
 
 
 inline bool led_get(uint8_t x, uint8_t y, uint8_t z)
 {
-	return (bool) ( (led_buffer[z][y] >> x) & 1 );
+	return (bool) ( (led_buffer[z][8-y] >> x) & 1 );
 }
 
 extern SPI_HandleTypeDef hspi1;
 
-bool led_update()
+bool led_update(int i)
 {
     HAL_StatusTypeDef status;
 
-	for (int i=0; i<CUBE_WIDTH; i++)
-	{
-		// populate the sink drivers
-		status = HAL_SPI_Transmit(&hspi1, (uint8_t*)led_buffer[i], CUBE_WIDTH, SPI_TIMEOUT);
-		// latch enable
-		// TODO maybe have an other function do the latch enabling
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
-	}
+	// populate the sink drivers
+	status = HAL_SPI_Transmit(&hspi1, (uint8_t*)led_buffer[i], CUBE_WIDTH+1, SPI_TIMEOUT);
+	// latch enable
+	// TODO maybe have an other function do the latch enabling
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+
 	return (status==HAL_OK);
 }

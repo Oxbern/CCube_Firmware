@@ -35,6 +35,8 @@
 #include "stm32f4xx.h"
 #include "stm32f4xx_it.h"
 #include "cmsis_os.h"
+#include "stdio.h"
+#include "GUI.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -43,6 +45,7 @@
 /* External variables --------------------------------------------------------*/
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
+
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -62,6 +65,51 @@ void SysTick_Handler(void)
   /* USER CODE BEGIN SysTick_IRQn 1 */
 
   /* USER CODE END SysTick_IRQn 1 */
+}
+
+/**
+  * @brief  This function handles Hard Fault exception.
+  * @param  None
+  * @retval None
+  */
+void HardFault_Handler(unsigned int * hardfault_args)
+{
+	  unsigned int stacked_r0;
+	  unsigned int stacked_r1;
+	  unsigned int stacked_r2;
+	  unsigned int stacked_r3;
+	  unsigned int stacked_r12;
+	  unsigned int stacked_lr;
+	  unsigned int stacked_pc;
+	  unsigned int stacked_psr;
+
+	  stacked_r0 = ((unsigned long) hardfault_args[0]);
+	  stacked_r1 = ((unsigned long) hardfault_args[1]);
+	  stacked_r2 = ((unsigned long) hardfault_args[2]);
+	  stacked_r3 = ((unsigned long) hardfault_args[3]);
+
+	  stacked_r12 = ((unsigned long) hardfault_args[4]);
+	  stacked_lr = ((unsigned long) hardfault_args[5]);
+	  stacked_pc = ((unsigned long) hardfault_args[6]);
+	  stacked_psr = ((unsigned long) hardfault_args[7]);
+
+	  printf ("\n\n[Hard fault handler - all numbers in hex]\n");
+	  printf ("R0 = %x\n", stacked_r0);
+	  printf ("R1 = %x\n", stacked_r1);
+	  printf ("R2 = %x\n", stacked_r2);
+	  printf ("R3 = %x\n", stacked_r3);
+	  printf ("R12 = %x\n", stacked_r12);
+	  printf ("LR [R14] = %x  subroutine call return address\n", stacked_lr);
+	  printf ("PC [R15] = %x  program counter\n", stacked_pc);
+	  printf ("PSR = %x\n", stacked_psr);
+	  printf ("BFAR = %lx\n", (*((volatile unsigned long *)(0xE000ED38))));
+	  printf ("CFSR = %lx\n", (*((volatile unsigned long *)(0xE000ED28))));
+	  printf ("HFSR = %lx\n", (*((volatile unsigned long *)(0xE000ED2C))));
+	  printf ("DFSR = %lx\n", (*((volatile unsigned long *)(0xE000ED30))));
+	  printf ("AFSR = %lx\n", (*((volatile unsigned long *)(0xE000ED3C))));
+	  printf ("SCB_SHCSR = %lx\n", SCB->SHCSR);
+
+	  while (1);
 }
 
 /******************************************************************************/

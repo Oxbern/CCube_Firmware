@@ -321,6 +321,12 @@ __weak void HAL_IncTick(void)
   */
 __weak uint32_t HAL_GetTick(void)
 {
+	uint32_t temp = SCB->ICSR & SCB_ICSR_VECTPENDING_Msk;
+	if (temp == 0xf000UL)
+	{
+		SCB->ICSR |= SCB_ICSR_PENDSTCLR_Msk;
+		uwTick++;
+	}
   return uwTick;
 }
 

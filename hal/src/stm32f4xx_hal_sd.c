@@ -178,6 +178,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f4xx_hal.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "cmsis_os.h"
 
 #ifdef HAL_SD_MODULE_ENABLED
 

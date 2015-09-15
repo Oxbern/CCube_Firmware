@@ -49,6 +49,9 @@
 #include "spi.h"
 #include "tim.h"
 #include "adc.h"
+#include "fatfs.h"
+#include "json.h"
+#include "json-builder.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -60,6 +63,7 @@
 /* USER CODE BEGIN PV */
 extern USBD_HandleTypeDef hUsbDeviceFS;
 extern I2C_HandleTypeDef I2cHandle;
+extern SPI_HandleTypeDef hspi1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,8 +75,13 @@ extern void FREERTOS_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-
+static inline int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t out_max)
+{
+	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
 /* USER CODE END 0 */
+
+extern SD_HandleTypeDef hsd;
 
 int main(void)
 {
@@ -90,29 +99,53 @@ int main(void)
   SystemClock_Config();
 
   /* Initialize all configured peripherals */
-  GPIO_Init();
-  DMA2D_Init();
-  SDRAM_Init();
-  LTDC_Init();
-  SD_Init();
-  CRC_Init();
-  USB_DEVICE_Init();
-  GUI_Init();
-  I2C_Init();
-  SPI_Init();
-  TIM_Init();
-  ADC_Init();
+	GPIO_Init();
+	CRC_Init();
+	SDRAM_Init();
+	DMA2D_Init();
+	LTDC_Init();
+	GUI_Init();
+	SPI_Init();
+	TIM_Init();
+	ADC_Init();
+	I2C_Init();
+	USB_DEVICE_Init();
+	SD_Init();
+
+	GUI_SetColor(GUI_WHITE);
+	GUI_SetFont(GUI_FONT_24_ASCII);
+	GUI_SelectLayer(0);
+	printf("CCube alpha v1.0 Crystallography \n");
+
+
+	FIL my_file;
+	char* str;
+	if (f_open(&my_file, "soutenance.ccdb", FA_READ) != FR_OK)
+	{
+		printf("f_open error\n");
+	} else {
+		// kwerky way to get clean file size
+		uint32_t file_size = f_size(&my_file);
+		str = malloc(file_size);
+
+		// read the file in a buffer
+		f_lseek(&my_file, 0);
+		uint32_t bytesread; // TODO check bytesead agains lenght
+		FRESULT res = f_read(&my_file, str, file_size, (UINT*)&bytesread);
+		str[file_size-1] = '\0';
+		f_close(&my_file);
+		if (res != FR_OK)
+		{
+			printf("f_read error\n");
+		} else {
+			printf("%s\n", str);
+		}
+	}
 		
   /* USER CODE BEGIN 2 */
   
-  GUI_SetColor(GUI_WHITE);
-  GUI_SetFont(GUI_FONT_24_ASCII);
-  GUI_SelectLayer(0);
-
-  printf("CCube alpha v1.0 Crystallography \n");
-  printf("Initializing FreeRTOS\n");
   FREERTOS_Init();
-  printf("Starting Scheduler\n");
+  printf("Starting the FreeRTOS kernel\n");
   osKernelStart();
   /* USER CODE END 2 */
 
@@ -153,8 +186,8 @@ void SystemClock_Config(void)
 	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-	RCC_OscInitStruct.PLL.PLLM = 8;//5;
-	RCC_OscInitStruct.PLL.PLLN = 336;//210;
+	RCC_OscInitStruct.PLL.PLLM = 5;//8;//5;
+	RCC_OscInitStruct.PLL.PLLN = 210;//336;//210;
 	RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
 	RCC_OscInitStruct.PLL.PLLQ = 7;//4;
 	HAL_RCC_OscConfig(&RCC_OscInitStruct);
@@ -179,7 +212,7 @@ void SystemClock_Config(void)
 	/* LTDC clock frequency = PLLLCDCLK / RCC_PLLSAIDIVR_8 = 48/8 = 6 MHz */
 
 	PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_LTDC;
-	PeriphClkInitStruct.PLLSAI.PLLSAIN = 192;
+	PeriphClkInitStruct.PLLSAI.PLLSAIN = 120;
 	PeriphClkInitStruct.PLLSAI.PLLSAIR = 4;
 	PeriphClkInitStruct.PLLSAIDivR = RCC_PLLSAIDIVR_8;
 	HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);

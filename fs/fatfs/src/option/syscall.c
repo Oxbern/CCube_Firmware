@@ -5,6 +5,7 @@
 
 #include <stdlib.h>		/* ANSI memory controls */
 #include "ff.h"
+#include "FreeRTOS.h"
 
 #if _FS_REENTRANT
 /*-----------------------------------------------------------------------

@@ -20,7 +20,7 @@ OBJCOPY=arm-none-eabi-objcopy
 # COMMON CFLAGS
 ################
 
-CFLAGS  = -g -Wall -std=gnu99
+CFLAGS  = -g -Wall -std=gnu99 #-O3
 CFLAGS += -T$(LDSCRIPT)
 CFLAGS += -mlittle-endian -mthumb -mcpu=cortex-m4 -mthumb-interwork
 CFLAGS += -mfloat-abi=hard -mfpu=fpv4-sp-d16
@@ -128,11 +128,11 @@ OBJS = $(SRCS:.c=.o)
 
 all: proj
 
-proj: $(PROJ_NAME).elf
+proj: $(BUILD)/$(PROJ_NAME).elf
 
-$(PROJ_NAME).elf: $(SRCS)
+$(BUILD)/$(PROJ_NAME).elf: $(SRCS)
 	@echo "Compiling project..."
-	@$(CC) $(CFLAGS) $(DEFS) $(LIBS) $^ -o $(BUILD)/$@ $(LDFLAGS)
+	@$(CC) $(CFLAGS) $(DEFS) $(LIBS) $^ -o $@ $(LDFLAGS)
 	@$(OBJCOPY) -O ihex $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).hex
 	@$(OBJCOPY) -O binary $(BUILD)/$(PROJ_NAME).elf $(BUILD)/$(PROJ_NAME).bin
 	@echo "DONE"
