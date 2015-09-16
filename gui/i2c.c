@@ -24,3 +24,16 @@ void I2C_Init(void)
   HAL_GPIO_WritePin(I2Cx_WAKEUP_GPIO_PORT, I2Cx_WAKEUP_PIN, GPIO_PIN_SET);
   HAL_Delay(400);
 }
+
+void I2C_Reset(void)
+{
+  HAL_GPIO_WritePin(I2Cx_WAKEUP_GPIO_PORT, I2Cx_WAKEUP_PIN, GPIO_PIN_RESET);
+
+  HAL_I2C_DeInit(&I2cHandle);
+
+  HAL_I2C_Init(&I2cHandle);
+
+  HAL_Delay(5);
+  HAL_GPIO_WritePin(I2Cx_WAKEUP_GPIO_PORT, I2Cx_WAKEUP_PIN, GPIO_PIN_SET);
+  HAL_Delay(400);
+}

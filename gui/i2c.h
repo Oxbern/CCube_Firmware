@@ -23,8 +23,10 @@
 
 #define I2C_ADDRESS 0x70
 
-#define I2C_TIMEOUT 1000
+#define I2C_TIMEOUT 500
 
 void I2C_Init(void);
+
+void I2C_Reset(void);
 
 #endif

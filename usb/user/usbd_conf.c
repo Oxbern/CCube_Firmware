@@ -36,7 +36,7 @@
 #include "stm32f4xx_hal.h"
 #include "usbd_def.h"
 #include "usbd_core.h"
-#include "GUI.h"
+#include "stdio.h"
 
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
@@ -254,7 +254,7 @@ void HAL_PCD_ISOINIncompleteCallback(PCD_HandleTypeDef *hpcd, uint8_t epnum)
   */
 void HAL_PCD_ConnectCallback(PCD_HandleTypeDef *hpcd)
 {
-  GUI_DispString("\nUsb connected. Start API Mode ?\n>>> ");
+  printf("Usb connected.\n");
   USBD_LL_DevConnected(hpcd->pData);
 }
 
@@ -265,7 +265,7 @@ void HAL_PCD_ConnectCallback(PCD_HandleTypeDef *hpcd)
   */
 void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
 {
-  GUI_DispString("\nUsb disconnected.\n>>> ");
+  printf("Usb disconnected.");
   USBD_LL_DevDisconnected(hpcd->pData);
 }
 

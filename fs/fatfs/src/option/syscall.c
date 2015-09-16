@@ -6,6 +6,7 @@
 #include <stdlib.h>		/* ANSI memory controls */
 #include "ff.h"
 #include "FreeRTOS.h"
+#include "cmsis_os.h"
 
 #if _FS_REENTRANT
 /*-----------------------------------------------------------------------
@@ -24,7 +25,7 @@ int ff_cre_syncobj (	/* TRUE:Function succeeded, FALSE:Could not create due to a
   int ret;
   
   osSemaphoreDef(SEM);
-  *sobj = osSemaphoreCreate(osSemaphore(SEM), 1);		
+  *sobj = osSemaphoreCreate(osSemaphore(SEM), 1);
   ret = (*sobj != NULL);
   
   return ret;
@@ -102,7 +103,7 @@ void* ff_memalloc (	/* Returns pointer to the allocated memory block */
 	UINT size		/* Number of bytes to allocate */
 )
 {
-  return malloc(size);
+  return pvPortMalloc(size);
 }
 
 
@@ -114,7 +115,7 @@ void ff_memfree(
 	void* mblock	/* Pointer to the memory block to free */
 )
 {
-  free(mblock);
+  vPortFree(mblock);
 }
 
 #endif

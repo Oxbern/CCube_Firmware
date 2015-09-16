@@ -251,6 +251,9 @@ void HAL_CRC_MspDeInit(CRC_HandleTypeDef* hcrc)
 
 void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 {
+	static DMA_HandleTypeDef hdma_tx;
+	static DMA_HandleTypeDef hdma_rx;
+	
 	GPIO_InitTypeDef GPIO_InitStruct;
 	if(hsd->Instance==SDIO)
 	{
@@ -283,9 +286,62 @@ void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 		GPIO_InitStruct.Alternate = GPIO_AF12_SDIO;
 		HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-		/* USER CODE BEGIN SDIO_MspInit 1 */
+		HAL_NVIC_SetPriority(SDIO_IRQn, 0, 13);
+		HAL_NVIC_EnableIRQ(SDIO_IRQn);
 
-		/* USER CODE END SDIO_MspInit 1 */
+	__HAL_RCC_DMA2_CLK_ENABLE();
+
+	/*##-3- Configure the DMA streams ##########################################*/
+	/* Configure the DMA handler for Transmission process */
+	hdma_tx.Instance                 = DMA2_Stream6;
+
+	hdma_tx.Init.Channel             = DMA_CHANNEL_4;
+	hdma_tx.Init.Direction           = DMA_MEMORY_TO_PERIPH;
+	hdma_tx.Init.PeriphInc           = DMA_PINC_DISABLE;
+	hdma_tx.Init.MemInc              = DMA_MINC_ENABLE;
+	hdma_tx.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+	hdma_tx.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
+	hdma_tx.Init.Mode                = DMA_NORMAL;
+	hdma_tx.Init.Priority            = DMA_PRIORITY_VERY_HIGH;
+	hdma_tx.Init.FIFOMode            = DMA_FIFOMODE_ENABLE;         
+	hdma_tx.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL;
+	hdma_tx.Init.MemBurst            = DMA_MBURST_INC4;
+	hdma_tx.Init.PeriphBurst         = DMA_PBURST_INC4;
+
+	HAL_DMA_Init(&hdma_tx);   
+
+	/* Associate the initialized DMA handle to the the I2C handle */
+	__HAL_LINKDMA(hsd, hdmatx, hdma_tx);
+
+	/* Configure the DMA handler for Transmission process */
+	hdma_rx.Instance                 = DMA2_Stream3;
+
+	hdma_rx.Init.Channel             = DMA_CHANNEL_4;
+	hdma_rx.Init.Direction           = DMA_PERIPH_TO_MEMORY;
+	hdma_rx.Init.PeriphInc           = DMA_PINC_DISABLE;
+	hdma_rx.Init.MemInc              = DMA_MINC_ENABLE;
+	hdma_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
+	hdma_rx.Init.MemDataAlignment    = DMA_MDATAALIGN_WORD;
+	hdma_rx.Init.Mode                = DMA_NORMAL;
+	hdma_rx.Init.Priority            = DMA_PRIORITY_VERY_HIGH;
+	hdma_rx.Init.FIFOMode            = DMA_FIFOMODE_ENABLE;         
+	hdma_rx.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL;
+	hdma_rx.Init.MemBurst            = DMA_MBURST_INC4;
+	hdma_rx.Init.PeriphBurst         = DMA_PBURST_INC4; 
+
+	HAL_DMA_Init(&hdma_rx);
+
+	/* Associate the initialized DMA handle to the the I2C handle */
+	__HAL_LINKDMA(hsd, hdmarx, hdma_rx);
+
+	/*##-4- Configure the NVIC for DMA #########################################*/
+	/* NVIC configuration for DMA transfer complete interrupt (SDIO_TX) */
+	HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 0, 2);
+	HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
+
+	/* NVIC configuration for DMA transfer complete interrupt (SDIO_RX) */
+	HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 1);
+	HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 	}
 }
 

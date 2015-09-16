@@ -19,6 +19,7 @@
 #include "json.h"
 #include "json-builder.h"
 #include "led.h"
+#include "console.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -48,25 +49,27 @@ void StartFsTask(void const * argument);
  */
 void FREERTOS_Init(void)
 {
-	osThreadDef(initTask, StartInitTask, osPriorityHigh, 0, 4096);
+	osThreadDef(initTask, StartInitTask, osPriorityHigh, 0, 8192);
 	initTaskHandle = osThreadCreate(osThread(initTask), NULL);
 
 }
-/*
-static __IO uint32_t ticks;
+
+static __IO uint32_t uwTick;
 
 void HAL_IncTick(void)
 {
-  ticks++;
+  uwTick++;
 }
 
 void HAL_Delay(volatile uint32_t millis)
 {
+
   if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
   {
-	osDelay(millis);
+	//osDelay(millis);
+	vTaskDelay(millis);
   } else {
-	uint32_t t = ticks;
+	uint32_t t = uwTick;
 	while((HAL_GetTick() - t) < millis)
 	{
 	}
@@ -80,31 +83,48 @@ void vApplicationTickHook(void)
 
 uint32_t HAL_GetTick(void)
 {
+	/*
 	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
 	{
 		return osKernelSysTick();
 	} else {
 		return ticks;
 	}	
-	
+	*/
+	uint32_t temp = SCB->ICSR & SCB_ICSR_VECTPENDING_Msk;
+	if (temp == 0xf000UL)
+	{
+		SCB->ICSR |= SCB_ICSR_PENDSTCLR_Msk;
+		uwTick++;
+	}
+	return uwTick;
 }
-*/
+
 void StartInitTask(void const * argument)
 {
+	
 
-	osThreadDef(touchTask, StartTouchTask, osPriorityNormal, 0, 4096);
+	SPI_Init();
+	TIM_Init();
+	ADC_Init();
+	I2C_Init();
+	USB_DEVICE_Init();
+	
+
+
+	osThreadDef(touchTask, StartTouchTask, osPriorityNormal, 0, 8192);
 	touchTaskHandle = osThreadCreate(osThread(touchTask), NULL);
 
-	osThreadDef(pwmTask, StartPwmTask, osPriorityNormal, 0, 4096);
+	osThreadDef(pwmTask, StartPwmTask, osPriorityNormal, 0, 8192);
 	pwmTaskHandle = osThreadCreate(osThread(pwmTask), NULL);
 
-	osThreadDef(ledTask, StartLedTask, osPriorityNormal, 0, 4096);
+	osThreadDef(ledTask, StartLedTask, osPriorityNormal, 0, 8192);
 	ledTaskHandle = osThreadCreate(osThread(ledTask), NULL);
 
-	osThreadDef(fsTask, StartFsTask, osPriorityNormal, 0, 4096);
+	osThreadDef(fsTask, StartFsTask, osPriorityNormal, 0, 16384);
 	fsTaskHandle = osThreadCreate(osThread(fsTask), NULL);
 
-
+	// vTaskDelete(initTaskHandle);
     while(1)
     {
 		osDelay(5000);
@@ -116,7 +136,8 @@ void StartFsTask(void const * argument)
 	printf("Fs task started\n");
 	FIL my_file;
 	char* str;
-	if (f_open(&my_file, "soutenance.ccdb", FA_READ) != FR_OK)
+	FRESULT res1 = f_open(&my_file, "soutenance.ccdb", FA_READ);
+	if (res1 != FR_OK)
 	{
 		printf("f_open error\n");
 	} else {
@@ -127,7 +148,9 @@ void StartFsTask(void const * argument)
 		// read the file in a buffer
 		f_lseek(&my_file, 0);
 		uint32_t bytesread; // TODO check bytesead agains lenght
+		taskENTER_CRITICAL();
 		FRESULT res = f_read(&my_file, str, file_size, (UINT*)&bytesread);
+		taskEXIT_CRITICAL();
 		str[file_size-1] = '\0';
 		f_close(&my_file);
 		if (res != FR_OK)
@@ -193,6 +216,7 @@ void StartLedTask(void const * argument)
 			printf("Error Trying to update\n");
 		}
 		i = (i+1)%9;
+		//console_disp();
 		osDelay(1);
     }
 }
@@ -270,22 +294,50 @@ void StartPwmTask(void const * argument)
  */
 extern I2C_HandleTypeDef I2cHandle;
 
+const char *b2b(int x)
+{
+	static char b[9];
+	b[0] = '\0';
+	int z;
+	for (z=128; z > 0; z>>=1)
+	{
+		strcat(b, ((x & z) == z) ? "1" : "0");
+	}
+	return b;
+}
+
 void StartTouchTask(void const * argument)
 {
 	uint8_t I2C_RX_Buffer[0x1F];
 	printf("Touch task started\n");
+	GUI_PID_STATE State;
     while(1)
     {
 		if (HAL_GPIO_ReadPin(I2Cx_IT_GPIO_PORT, I2Cx_IT_PIN) == GPIO_PIN_RESET)
 		{
 			if (HAL_I2C_Master_Receive(&I2cHandle, (uint16_t)I2C_ADDRESS, (uint8_t*)I2C_RX_Buffer, 0x1F, I2C_TIMEOUT) != HAL_OK)
 			{
-				printf("I2C Com Problem\n");
+				printf("I2C Com Problem, Reseting...\n");
+				I2C_Reset();
+				printf("I2C Reset complete\n");
+			} else {
+				uint32_t i = 3;
+				uint8_t ev = ((uint16_t)I2C_RX_Buffer[i] >> 6) & 0b00000011;
+				/*
+				if (ev == 0)
+					printf("Put Down\n");
+				if (ev == 1)
+					printf("Put Up\n");
+				*/
+				GUI_PID_GetState(&State);
+				uint16_t x = (((uint16_t)(I2C_RX_Buffer[i] & 0x0F)) << 8) | ((uint16_t)I2C_RX_Buffer[i+1]);
+				uint16_t y = (((uint16_t)(I2C_RX_Buffer[i+2] & 0x0F)) << 8) | ((uint16_t)I2C_RX_Buffer[i+3]);
+				State.x = x;
+				State.y = y;
+				State.Pressed = (ev == 0 || ev == 2) ? 1 : 0;
+				GUI_PID_StoreState(&State);
+				GUI_DrawCircle(x, y, 20);
 			}
-			uint32_t i = 3;
-			uint16_t x = (((uint16_t)(I2C_RX_Buffer[i] & 0x0F)) << 8) | ((uint16_t)I2C_RX_Buffer[i+1]);
-			uint16_t y = (((uint16_t)(I2C_RX_Buffer[i+2] & 0x0F)) << 8) | ((uint16_t)I2C_RX_Buffer[i+3]);
-			GUI_DrawCircle(x, y, 20);
 		}
 		osDelay(5);
     }

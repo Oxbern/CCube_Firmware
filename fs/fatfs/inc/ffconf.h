@@ -183,7 +183,7 @@
 /  with file lock control. This feature uses bss _FS_LOCK * 12 bytes. */
    
 
-#define _FS_REENTRANT    1  /* 0:Disable or 1:Enable */
+#define _FS_REENTRANT    0  /* 0:Disable or 1:Enable */
 #define _FS_TIMEOUT      1000 /* Timeout period in unit of time ticks */
 #define _SYNC_t          osSemaphoreId 
 /* The _FS_REENTRANT option switches the re-entrancy (thread safe) of the FatFs module.

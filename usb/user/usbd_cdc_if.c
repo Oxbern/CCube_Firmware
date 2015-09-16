@@ -32,7 +32,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
-#include "GUI.h"
+#include <stdio.h>
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
   * @{
@@ -246,11 +246,10 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 
 	if (buff_TX[0]=='\r' || buff_TX[0]=='\n')
 	{
-		GUI_DispNextLine();
-		GUI_DispString(">>> ");
+		printf("\n>>> ");
 	} else {
 		buff_TX[*Len] = '\0';
-		GUI_DispString((const char *)buff_TX);
+		printf("%s",(const char *)buff_TX);
 	}
 	
 	USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);

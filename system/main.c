@@ -100,27 +100,24 @@ int main(void)
 
   /* Initialize all configured peripherals */
 	GPIO_Init();
-	CRC_Init();
 	SDRAM_Init();
+  /* USER CODE BEGIN 2 */
+
 	DMA2D_Init();
 	LTDC_Init();
+	CRC_Init();
 	GUI_Init();
-	SPI_Init();
-	TIM_Init();
-	ADC_Init();
-	I2C_Init();
-	USB_DEVICE_Init();
 	SD_Init();
 
 	GUI_SetColor(GUI_WHITE);
 	GUI_SetFont(GUI_FONT_24_ASCII);
 	GUI_SelectLayer(0);
-	printf("CCube alpha v1.0 Crystallography \n");
-
-
+/*
+	printf("Fs task started\n");
 	FIL my_file;
 	char* str;
-	if (f_open(&my_file, "soutenance.ccdb", FA_READ) != FR_OK)
+	FRESULT res1 = f_open(&my_file, "soutenance.ccdb", FA_READ);
+	if (res1 != FR_OK)
 	{
 		printf("f_open error\n");
 	} else {
@@ -141,17 +138,15 @@ int main(void)
 			printf("%s\n", str);
 		}
 	}
-		
-  /* USER CODE BEGIN 2 */
-  
+*/
+
   FREERTOS_Init();
-  printf("Starting the FreeRTOS kernel\n");
+
   osKernelStart();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  printf("KERNEL PICNIC!\n osKernelStart() returned!\n");
   while (1)
   {
 	/* USER CODE END WHILE */
@@ -214,7 +209,7 @@ void SystemClock_Config(void)
 	PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_LTDC;
 	PeriphClkInitStruct.PLLSAI.PLLSAIN = 120;
 	PeriphClkInitStruct.PLLSAI.PLLSAIR = 4;
-	PeriphClkInitStruct.PLLSAIDivR = RCC_PLLSAIDIVR_8;
+	PeriphClkInitStruct.PLLSAIDivR = RCC_PLLSAIDIVR_4;
 	HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
 
 	HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);

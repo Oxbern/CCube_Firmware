@@ -45,7 +45,7 @@
 /* External variables --------------------------------------------------------*/
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
-
+extern SD_HandleTypeDef hsd;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -56,15 +56,10 @@ extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 */
 void SysTick_Handler(void)
 {
-  /* USER CODE BEGIN SysTick_IRQn 0 */
+	osSystickHandler();
 
-  /* USER CODE END SysTick_IRQn 0 */
-  HAL_IncTick();
-  //HAL_SYSTICK_IRQHandler();
-  osSystickHandler();
-  /* USER CODE BEGIN SysTick_IRQn 1 */
+	HAL_IncTick();
 
-  /* USER CODE END SysTick_IRQn 1 */
 }
 
 /**
@@ -132,6 +127,15 @@ void OTG_FS_IRQHandler(void)
   /* USER CODE BEGIN OTG_FS_IRQn 1 */
 
   /* USER CODE END OTG_FS_IRQn 1 */
+}
+
+void DMA2_Stream6_IRQHandler(void)
+{
+	HAL_DMA_IRQHandler(hsd.hdmatx);
+}
+void DMA2_Stream3_IRQHandler(void)
+{
+	HAL_DMA_IRQHandler(hsd.hdmarx);
 }
 
 /* USER CODE BEGIN 1 */
