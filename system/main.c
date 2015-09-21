@@ -116,7 +116,7 @@ int main(void)
 	printf("Fs task started\n");
 	FIL my_file;
 	char* str;
-	FRESULT res1 = f_open(&my_file, "soutenance.ccdb", FA_READ);
+	FRESULT res1 = f_open(&my_file, "example1.ccdb", FA_READ);
 	if (res1 != FR_OK)
 	{
 		printf("f_open error\n");

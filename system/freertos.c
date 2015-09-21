@@ -3,7 +3,11 @@
 #include "cmsis_os.h"
 
 #include "stm32f4xx_hal.h"
+
 #include "GUI.h"
+#include "BUTTON.h"
+#include "WM.h"
+
 #include "usbd_cdc.h"
 #include "usb_device.h"
 #include "ltdc.h"
@@ -42,6 +46,9 @@ void StartLedTask(void const * argument);
 
 osThreadId fsTaskHandle;
 void StartFsTask(void const * argument);
+
+osThreadId buttonTaskHandle;
+void StartButtonTask(void const * argument);
 
 
 /**
@@ -124,10 +131,47 @@ void StartInitTask(void const * argument)
 	osThreadDef(fsTask, StartFsTask, osPriorityNormal, 0, 16384);
 	fsTaskHandle = osThreadCreate(osThread(fsTask), NULL);
 
+	osThreadDef(buttonTask, StartButtonTask, osPriorityNormal, 0, 8192);
+	buttonTaskHandle = osThreadCreate(osThread(buttonTask), NULL);
+
 	// vTaskDelete(initTaskHandle);
     while(1)
     {
 		osDelay(5000);
+    }
+}
+
+void StartButtonTask(void const * argument)
+{
+	BUTTON_Handle hButton0;
+	BUTTON_Handle hButton1;
+	BUTTON_Handle hButton2;
+	BUTTON_Handle hButton3;
+
+	WM_SetCreateFlags(WM_CF_MEMDEV);
+	WM_EnableMemdev(WM_HBKWIN);
+
+	hButton0 = BUTTON_Create(700, 100, 100, 380, GUI_ID_OK, WM_CF_SHOW);
+  	BUTTON_SetText(hButton0, ">");
+
+	hButton1 = BUTTON_Create(700, 0, 100, 100, GUI_ID_OK, WM_CF_SHOW);
+  	BUTTON_SetText(hButton1, ">");
+
+	hButton2 = BUTTON_Create(0, 100, 100, 380, GUI_ID_OK, WM_CF_SHOW);
+  	BUTTON_SetText(hButton2, "<");
+
+	hButton3 = BUTTON_Create(0, 0, 100, 100, GUI_ID_OK, WM_CF_SHOW);
+  	BUTTON_SetText(hButton3, "<");
+
+
+/*
+	BUTTON_Delete(hButton);
+ 	GUI_ClearRect(700, 0, 480, 800);
+*/
+    while(1)
+    {
+		GUI_Exec();
+		osDelay(20);
     }
 }
 
@@ -336,7 +380,7 @@ void StartTouchTask(void const * argument)
 				State.y = y;
 				State.Pressed = (ev == 0 || ev == 2) ? 1 : 0;
 				GUI_PID_StoreState(&State);
-				GUI_DrawCircle(x, y, 20);
+				//GUI_DrawCircle(x, y, 20);
 			}
 		}
 		osDelay(5);

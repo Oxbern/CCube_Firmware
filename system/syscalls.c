@@ -50,7 +50,7 @@ _ssize_t  _write_r(struct _reent *ptr, int fd, const void *buf, size_t cnt)
 	}
 	*/
 	console_write((char*)buf, cnt);
-	console_disp();
+	//console_disp();
 	return cnt;
 }
 

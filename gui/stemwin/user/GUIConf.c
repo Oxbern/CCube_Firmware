@@ -51,6 +51,7 @@ Purpose     : Display controller initialization
   ******************************************************************************
   */
 #include "GUI.h"
+#include "string.h"
 /*********************************************************************
 *
 *       Defines
@@ -69,6 +70,7 @@ Purpose     : Display controller initialization
 */
 
 static U32 aMemory[GUI_NUMBYTES / 4];
+//static U32 *aMemory;
 
 void GUI_X_Init(void)
 {
@@ -90,6 +92,8 @@ void GUI_X_Config(void) {
   //
   // Assign memory to emWin
   //
+  // aMemory = malloc(GUI_NUMBYTES);
+  // memset(aMemory, 0, GUI_NUMBYTES);
   GUI_ALLOC_AssignMemory(aMemory, GUI_NUMBYTES);
   //
   // Set default font
