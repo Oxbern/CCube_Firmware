@@ -286,13 +286,15 @@ void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 		GPIO_InitStruct.Alternate = GPIO_AF12_SDIO;
 		HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-		HAL_NVIC_SetPriority(SDIO_IRQn, 0, 13);
-		HAL_NVIC_EnableIRQ(SDIO_IRQn);
+		//HAL_NVIC_SetPriority(SDIO_IRQn, 0, 2);
+		//HAL_NVIC_EnableIRQ(SDIO_IRQn);
 
-	__HAL_RCC_DMA2_CLK_ENABLE();
+	//__HAL_RCC_DMA2_CLK_ENABLE();
 
 	/*##-3- Configure the DMA streams ##########################################*/
 	/* Configure the DMA handler for Transmission process */
+
+	/*
 	hdma_tx.Instance                 = DMA2_Stream6;
 
 	hdma_tx.Init.Channel             = DMA_CHANNEL_4;
@@ -307,13 +309,15 @@ void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 	hdma_tx.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL;
 	hdma_tx.Init.MemBurst            = DMA_MBURST_INC4;
 	hdma_tx.Init.PeriphBurst         = DMA_PBURST_INC4;
+	*/
 
-	HAL_DMA_Init(&hdma_tx);   
+	//HAL_DMA_Init(&hdma_tx);   
 
 	/* Associate the initialized DMA handle to the the I2C handle */
-	__HAL_LINKDMA(hsd, hdmatx, hdma_tx);
+	//__HAL_LINKDMA(hsd, hdmatx, hdma_tx);
 
 	/* Configure the DMA handler for Transmission process */
+	/*
 	hdma_rx.Instance                 = DMA2_Stream3;
 
 	hdma_rx.Init.Channel             = DMA_CHANNEL_4;
@@ -328,20 +332,21 @@ void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 	hdma_rx.Init.FIFOThreshold       = DMA_FIFO_THRESHOLD_FULL;
 	hdma_rx.Init.MemBurst            = DMA_MBURST_INC4;
 	hdma_rx.Init.PeriphBurst         = DMA_PBURST_INC4; 
+	*/
 
-	HAL_DMA_Init(&hdma_rx);
+	//HAL_DMA_Init(&hdma_rx);
 
 	/* Associate the initialized DMA handle to the the I2C handle */
-	__HAL_LINKDMA(hsd, hdmarx, hdma_rx);
+	//__HAL_LINKDMA(hsd, hdmarx, hdma_rx);
 
 	/*##-4- Configure the NVIC for DMA #########################################*/
 	/* NVIC configuration for DMA transfer complete interrupt (SDIO_TX) */
-	HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 0, 2);
-	HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
+	//HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 0, 2);
+	//HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
 
 	/* NVIC configuration for DMA transfer complete interrupt (SDIO_RX) */
-	HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 1);
-	HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
+	//HAL_NVIC_SetPriority(DMA2_Stream3_IRQn, 0, 1);
+	//HAL_NVIC_EnableIRQ(DMA2_Stream3_IRQn);
 	}
 }
 

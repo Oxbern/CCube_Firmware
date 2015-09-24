@@ -61,6 +61,7 @@ void FREERTOS_Init(void)
 
 }
 
+/*
 static __IO uint32_t uwTick;
 
 void HAL_IncTick(void)
@@ -90,14 +91,14 @@ void vApplicationTickHook(void)
 
 uint32_t HAL_GetTick(void)
 {
-	/*
-	if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
-	{
-		return osKernelSysTick();
-	} else {
-		return ticks;
-	}	
-	*/
+	
+	//if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+	//{
+	//	return osKernelSysTick();
+	//} else {
+	//	return ticks;
+	//}	
+	//
 	uint32_t temp = SCB->ICSR & SCB_ICSR_VECTPENDING_Msk;
 	if (temp == 0xf000UL)
 	{
@@ -106,20 +107,11 @@ uint32_t HAL_GetTick(void)
 	}
 	return uwTick;
 }
+*/
 
 void StartInitTask(void const * argument)
 {
-	
-
-	SPI_Init();
-	TIM_Init();
-	ADC_Init();
-	I2C_Init();
-	USB_DEVICE_Init();
-	
-
-
-	osThreadDef(touchTask, StartTouchTask, osPriorityNormal, 0, 8192);
+	osThreadDef(touchTask, StartTouchTask, osPriorityHigh, 0, 8192);
 	touchTaskHandle = osThreadCreate(osThread(touchTask), NULL);
 
 	osThreadDef(pwmTask, StartPwmTask, osPriorityNormal, 0, 8192);
@@ -151,6 +143,7 @@ void StartButtonTask(void const * argument)
 	WM_SetCreateFlags(WM_CF_MEMDEV);
 	WM_EnableMemdev(WM_HBKWIN);
 
+/*
 	hButton0 = BUTTON_Create(700, 100, 100, 380, GUI_ID_OK, WM_CF_SHOW);
   	BUTTON_SetText(hButton0, ">");
 
@@ -162,7 +155,7 @@ void StartButtonTask(void const * argument)
 
 	hButton3 = BUTTON_Create(0, 0, 100, 100, GUI_ID_OK, WM_CF_SHOW);
   	BUTTON_SetText(hButton3, "<");
-
+*/
 
 /*
 	BUTTON_Delete(hButton);
@@ -170,14 +163,67 @@ void StartButtonTask(void const * argument)
 */
     while(1)
     {
-		GUI_Exec();
+		//GUI_Exec();
+		console_disp();
 		osDelay(20);
     }
+}
+
+
+FRESULT scan_files (
+    char* path        /* Start node to be scanned (also used as work area) */
+)
+{
+    FRESULT res;
+    FILINFO fno;
+    DIR dir;
+    int i;
+    char *fn;   /* This function assumes non-Unicode configuration */
+#if _USE_LFN
+    static char lfn[_MAX_LFN + 1];   /* Buffer to store the LFN */
+    fno.lfname = lfn;
+    fno.lfsize = sizeof lfn;
+#endif
+
+
+    res = f_opendir(&dir, path);                       /* Open the directory */
+    if (res == FR_OK) {
+        i = strlen(path);
+        for (;;) {
+            res = f_readdir(&dir, &fno);                   /* Read a directory item */
+            if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
+            if (fno.fname[0] == '.') 
+			{
+					printf(".\n");
+					continue;             /* Ignore dot entry */
+			}
+#if _USE_LFN
+            fn = *fno.lfname ? fno.lfname : fno.fname;
+#else
+            fn = fno.fname;
+#endif
+            if (fno.fattrib & AM_DIR) {                    /* It is a directory */
+				int j = strlen(fn);
+				char *newpath[i+j]; // "/0" du i renplacé par "/" plus bas
+				strcat(newpath, path);
+				strcat(&newpath[i], "/");
+				strcat(&newpath[i+1], fn);
+                res = scan_files(newpath);
+                if (res != FR_OK) break;
+            } else {                                       /* It is a file. */
+                printf("%s/%s\n", path, fn);
+            }
+        }
+        f_closedir(&dir);
+    }
+
+    return res;
 }
 
 void StartFsTask(void const * argument)
 {
 	printf("Fs task started\n");
+	scan_files("");
 	FIL my_file;
 	char* str;
 	FRESULT res1 = f_open(&my_file, "soutenance.ccdb", FA_READ);
@@ -192,9 +238,9 @@ void StartFsTask(void const * argument)
 		// read the file in a buffer
 		f_lseek(&my_file, 0);
 		uint32_t bytesread; // TODO check bytesead agains lenght
-		taskENTER_CRITICAL();
+		//taskENTER_CRITICAL();
 		FRESULT res = f_read(&my_file, str, file_size, (UINT*)&bytesread);
-		taskEXIT_CRITICAL();
+		//taskEXIT_CRITICAL();
 		str[file_size-1] = '\0';
 		f_close(&my_file);
 		if (res != FR_OK)
@@ -260,7 +306,6 @@ void StartLedTask(void const * argument)
 			printf("Error Trying to update\n");
 		}
 		i = (i+1)%9;
-		//console_disp();
 		osDelay(1);
     }
 }
@@ -380,7 +425,7 @@ void StartTouchTask(void const * argument)
 				State.y = y;
 				State.Pressed = (ev == 0 || ev == 2) ? 1 : 0;
 				GUI_PID_StoreState(&State);
-				//GUI_DrawCircle(x, y, 20);
+				GUI_DrawCircle(x, y, 20);
 			}
 		}
 		osDelay(5);

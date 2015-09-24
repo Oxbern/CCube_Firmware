@@ -37,6 +37,7 @@
 #include "cmsis_os.h"
 #include "stdio.h"
 #include "GUI.h"
+#include "bsp_driver_sd.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -131,11 +132,16 @@ void OTG_FS_IRQHandler(void)
 
 void DMA2_Stream6_IRQHandler(void)
 {
-	HAL_DMA_IRQHandler(hsd.hdmatx);
+	BSP_SD_DMA_Tx_IRQHandler();
 }
 void DMA2_Stream3_IRQHandler(void)
 {
-	HAL_DMA_IRQHandler(hsd.hdmarx);
+	BSP_SD_DMA_Rx_IRQHandler();
+}
+
+void SDIO_IRQHandler(void)
+{
+	BSP_SD_IRQHandler();
 }
 
 /* USER CODE BEGIN 1 */
