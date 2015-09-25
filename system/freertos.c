@@ -6,6 +6,7 @@
 
 #include "GUI.h"
 #include "BUTTON.h"
+#include "TREEVIEW.h"
 #include "WM.h"
 
 #include "usbd_cdc.h"
@@ -26,6 +27,7 @@
 #include "console.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 /*
@@ -135,11 +137,28 @@ void StartInitTask(void const * argument)
 
 void StartButtonTask(void const * argument)
 {
-	BUTTON_Handle hButton0;
-	BUTTON_Handle hButton1;
-	BUTTON_Handle hButton2;
-	BUTTON_Handle hButton3;
+	//BUTTON_Handle hButton0;
+	//BUTTON_Handle hButton1;
+	//BUTTON_Handle hButton2;
+	//BUTTON_Handle hButton3;
 
+/*
+	TREEVIEW_Handle selection;
+	TREEVIEW_Handle selection1;
+	TREEVIEW_ITEM_Handle node1;
+	TREEVIEW_ITEM_Handle node2;
+	TREEVIEW_ITEM_Handle node3;
+	TREEVIEW_ITEM_Handle leaf11;
+	TREEVIEW_ITEM_Handle leaf12;
+	TREEVIEW_ITEM_Handle leaf13;
+	TREEVIEW_ITEM_Handle leaf21;
+	TREEVIEW_ITEM_Handle leaf22;
+	TREEVIEW_ITEM_Handle leaf23;
+	TREEVIEW_ITEM_Handle leaf31;
+	TREEVIEW_ITEM_Handle leaf32;
+*/
+
+	WM_MESSAGE Msg;
 	WM_SetCreateFlags(WM_CF_MEMDEV);
 	WM_EnableMemdev(WM_HBKWIN);
 
@@ -158,20 +177,152 @@ void StartButtonTask(void const * argument)
 */
 
 /*
+	selection = TREEVIEW_CreateEx(	600, 0,
+									200, 480,
+									0, WM_CF_SHOW,
+									TREEVIEW_CF_AUTOSCROLLBAR_V |
+									TREEVIEW_CF_ROWSELECT,
+									0
+									);
+
+
+	selection1 = TREEVIEW_CreateEx(	0, 0,
+									0, 0,
+									0, 0,
+									0,
+									0
+									);
+
+	TREEVIEW_ITEM_Handle tree =  TREEVIEW_InsertItem(	selection1,
+														TREEVIEW_ITEM_TYPE_NODE,
+														0,
+														0,
+														(const char *) "child_1"
+														);
+
+	TREEVIEW_ITEM_Handle child11 = TREEVIEW_InsertItem(	selection1,
+														TREEVIEW_ITEM_TYPE_NODE,
+														tree,
+														TREEVIEW_INSERT_FIRST_CHILD,
+														(const char *) "child_1_1"
+														);
+
+	TREEVIEW_ITEM_Handle child12 = TREEVIEW_InsertItem(	selection1,
+														TREEVIEW_ITEM_TYPE_NODE,
+														child11,
+														TREEVIEW_INSERT_BELOW,
+														(const char *) "child_1_2"
+														);
+
+	node1 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_NODE,
+									(const char *) "node_1",
+									0);
+	node2 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_NODE,
+									(const char *) "node_2",
+									0);
+	node3 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_NODE,
+									(const char *) "node_3",
+									0);
+	leaf11 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_LEAF,
+									(const char *) "leaf_1_1",
+									0);
+	leaf12 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_LEAF,
+									(const char *) "leaf_1_2",
+									0);
+	leaf13 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_LEAF,
+									(const char *) "leaf_1_3",
+									0);
+	leaf21 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_LEAF,
+									(const char *) "leaf_2_1",
+									0);
+	leaf22 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_LEAF,
+									(const char *) "leaf_2_2",
+									0);
+	leaf23 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_LEAF,
+									(const char *) "leaf_2_3",
+									0);
+	leaf31 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_LEAF,
+									(const char *) "leaf_3_1",
+									0);
+	leaf32 = TREEVIEW_ITEM_Create(	TREEVIEW_ITEM_TYPE_LEAF,
+									(const char *) "leaf_3_2",
+									0);
+
+	TREEVIEW_AttachItem(	selection,
+							node1,
+							0,
+							0);
+
+	TREEVIEW_AttachItem(	selection,
+							node2,
+							node1,
+							TREEVIEW_INSERT_BELOW);
+
+	TREEVIEW_AttachItem(	selection,
+							node3,
+							node2,
+							TREEVIEW_INSERT_BELOW);
+	
+	TREEVIEW_AttachItem(	selection,
+							tree,
+							node3,
+							TREEVIEW_INSERT_BELOW);
+
+	TREEVIEW_AttachItem(	selection,
+							node3,
+							node2,
+							TREEVIEW_INSERT_BELOW);
+	
+	TREEVIEW_AttachItem(	selection,
+							node3,
+							node2,
+							TREEVIEW_INSERT_BELOW);
+	
+	TREEVIEW_AttachItem(	selection,
+							leaf11,
+							node1,
+							TREEVIEW_INSERT_FIRST_CHILD);
+
+	TREEVIEW_AttachItem(	selection,
+							leaf12,
+							leaf11,
+							TREEVIEW_INSERT_BELOW);
+
+	TREEVIEW_AttachItem(	selection,
+							leaf13,
+							leaf12,
+							TREEVIEW_INSERT_BELOW);
+
+	TREEVIEW_AttachItem(	selection,
+							leaf21,
+							node2,
+							TREEVIEW_INSERT_FIRST_CHILD);
+
+	TREEVIEW_AttachItem(	selection,
+							leaf13,
+							leaf12,
+							TREEVIEW_INSERT_BELOW);
+
+
+	TREEVIEW_SetFont(selection, GUI_FONT_24_ASCII);
+*/
+
+/*
 	BUTTON_Delete(hButton);
  	GUI_ClearRect(700, 0, 480, 800);
 */
     while(1)
     {
-		//GUI_Exec();
+		WM_Exec();
 		console_disp();
-		osDelay(20);
+		osDelay(100);
     }
 }
 
 
 FRESULT scan_files (
-    char* path        /* Start node to be scanned (also used as work area) */
+	char* path,        /* Start node to be scanned (also used as work area) */
+	TREEVIEW_Handle *hpath
 )
 {
     FRESULT res;
@@ -179,39 +330,72 @@ FRESULT scan_files (
     DIR dir;
     int i;
     char *fn;   /* This function assumes non-Unicode configuration */
-#if _USE_LFN
     static char lfn[_MAX_LFN + 1];   /* Buffer to store the LFN */
     fno.lfname = lfn;
     fno.lfsize = sizeof lfn;
-#endif
 
 
     res = f_opendir(&dir, path);                       /* Open the directory */
     if (res == FR_OK) {
+		// Create directory in treeview
+		TREEVIEW_ITEM_Handle node =  TREEVIEW_InsertItem(	*hpath,
+															TREEVIEW_ITEM_TYPE_NODE,
+															0,
+															0,
+															(const char *)path
+														);
+		int nb_child = 0;
+		TREEVIEW_ITEM_Handle last_item = NULL;
         i = strlen(path);
         for (;;) {
             res = f_readdir(&dir, &fno);                   /* Read a directory item */
             if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
             if (fno.fname[0] == '.') 
 			{
-					printf(".\n");
 					continue;             /* Ignore dot entry */
 			}
-#if _USE_LFN
             fn = *fno.lfname ? fno.lfname : fno.fname;
-#else
-            fn = fno.fname;
-#endif
             if (fno.fattrib & AM_DIR) {                    /* It is a directory */
 				int j = strlen(fn);
-				char *newpath[i+j]; // "/0" du i renplacé par "/" plus bas
+				char * dirname = malloc(j);
+				strcpy(dirname, fn);
+				printf("%s\n", dirname);
+				char newpath[i+j]; // "/0" du i renplacé par "/" plus bas
+				newpath[0] = '\0';
 				strcat(newpath, path);
-				strcat(&newpath[i], "/");
-				strcat(&newpath[i+1], fn);
-                res = scan_files(newpath);
+				strcat(newpath, "/");
+				strcat(newpath, fn);
+				TREEVIEW_Handle child_tree = TREEVIEW_CreateEx(0,0,0,0,0,0,0,0);
+                res = scan_files(newpath, &child_tree);
+				printf("after scan_files %s\n", dirname);
+				TREEVIEW_ITEM_Handle child_tree_first_node = TREEVIEW_GetItem(	child_tree,
+																				0,
+																				TREEVIEW_GET_FIRST
+																				);
+				if (child_tree_first_node != 0)
+				{
+					child_tree_first_node = TREEVIEW_ITEM_SetText(	child_tree_first_node,
+																	dirname);
+					printf("%s\n", newpath);
+					TREEVIEW_AttachItem(	*hpath,
+											child_tree_first_node,
+											nb_child ? last_item : node,
+											nb_child ? TREEVIEW_INSERT_BELOW : TREEVIEW_INSERT_FIRST_CHILD
+										);
+					last_item = child_tree_first_node;
+				}
+				free(dirname);
                 if (res != FR_OK) break;
+				nb_child++;
             } else {                                       /* It is a file. */
-                printf("%s/%s\n", path, fn);
+				last_item = TREEVIEW_InsertItem(	*hpath,
+													TREEVIEW_ITEM_TYPE_LEAF,
+													nb_child ? last_item : node,
+													nb_child ? TREEVIEW_INSERT_BELOW : TREEVIEW_INSERT_FIRST_CHILD,
+													(const char *) fn
+												);
+				nb_child++;
+                //printf("%s/%s\n", path, fn);
             }
         }
         f_closedir(&dir);
@@ -223,7 +407,19 @@ FRESULT scan_files (
 void StartFsTask(void const * argument)
 {
 	printf("Fs task started\n");
-	scan_files("");
+	taskENTER_CRITICAL();
+	TREEVIEW_Handle filesystem  = TREEVIEW_CreateEx(	500, 0,
+														300, 480,
+														0, WM_CF_SHOW,
+														TREEVIEW_CF_AUTOSCROLLBAR_V |
+														TREEVIEW_CF_AUTOSCROLLBAR_H |
+														TREEVIEW_CF_ROWSELECT,
+														0
+													);
+	TREEVIEW_SetFont(filesystem, GUI_FONT_24_ASCII);
+	scan_files("", &filesystem);
+	TREEVIEW_ITEM_ExpandAll(TREEVIEW_GetItem(filesystem, 0, TREEVIEW_GET_FIRST));
+	taskEXIT_CRITICAL();
 	FIL my_file;
 	char* str;
 	FRESULT res1 = f_open(&my_file, "soutenance.ccdb", FA_READ);
@@ -250,7 +446,7 @@ void StartFsTask(void const * argument)
 			//printf("%s\n", str);
 			
 			json_settings settings = {};
-			settings.value_extra = json_builder_extra;  /* space for json-builder state */
+			settings.value_extra = json_builder_extra;
 
 			char error[128];
 			json_value * arr = json_parse_ex(&settings, str, strlen(str), error);
@@ -265,15 +461,17 @@ void StartFsTask(void const * argument)
 
 			int nb_points = arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.length;
 
-			printf("%i\n", nb_points);
+			//printf("%i\n", nb_points);
 
 			for (int i = 0; i < nb_points; i++)
 			{
+				/*
 				printf("[%i,%i,%i]\n",
 						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[0]->u.integer,
 						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[1]->u.integer,
 						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[2]->u.integer
 				);
+				*/
 				led_set((int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[0]->u.integer,
 						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[1]->u.integer,
 						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[2]->u.integer
