@@ -251,8 +251,8 @@ void HAL_CRC_MspDeInit(CRC_HandleTypeDef* hcrc)
 
 void HAL_SD_MspInit(SD_HandleTypeDef* hsd)
 {
-	static DMA_HandleTypeDef hdma_tx;
-	static DMA_HandleTypeDef hdma_rx;
+	//static DMA_HandleTypeDef hdma_tx;
+	//static DMA_HandleTypeDef hdma_rx;
 	
 	GPIO_InitTypeDef GPIO_InitStruct;
 	if(hsd->Instance==SDIO)

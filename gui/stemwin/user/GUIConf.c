@@ -51,7 +51,7 @@ Purpose     : Display controller initialization
   ******************************************************************************
   */
 #include "GUI.h"
-#include "string.h"
+#include "stdlib.h"
 /*********************************************************************
 *
 *       Defines
@@ -61,7 +61,7 @@ Purpose     : Display controller initialization
 //
 // Define the available number of bytes available for the GUI
 //
-#define GUI_NUMBYTES  (48*1024)
+#define GUI_NUMBYTES  (2048*1024)
 /*********************************************************************
 *
 *       Public code
@@ -69,8 +69,8 @@ Purpose     : Display controller initialization
 **********************************************************************
 */
 
-static U32 aMemory[GUI_NUMBYTES / 4];
-//static U32 *aMemory;
+//static U32 aMemory[GUI_NUMBYTES / 4];
+static U32 *aMemory;
 
 void GUI_X_Init(void)
 {
@@ -92,8 +92,8 @@ void GUI_X_Config(void) {
   //
   // Assign memory to emWin
   //
-  // aMemory = malloc(GUI_NUMBYTES);
-  // memset(aMemory, 0, GUI_NUMBYTES);
+   aMemory = malloc(GUI_NUMBYTES);
+   //memset(aMemory, 0, GUI_NUMBYTES);
   GUI_ALLOC_AssignMemory(aMemory, GUI_NUMBYTES);
   //
   // Set default font

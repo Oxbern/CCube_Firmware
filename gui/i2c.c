@@ -12,7 +12,7 @@ void I2C_Init(void)
   I2cHandle.Init.ClockSpeed      = 400000;
   I2cHandle.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
   I2cHandle.Init.DutyCycle       = I2C_DUTYCYCLE_16_9;
-  I2cHandle.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  I2cHandle.Init.GeneralCallMode = I2C_GENERALCALL_ENABLE;
   I2cHandle.Init.NoStretchMode   = I2C_NOSTRETCH_DISABLE;
   I2cHandle.Init.OwnAddress1     = I2C_ADDRESS;
   I2cHandle.Init.OwnAddress2     = 0xFE;

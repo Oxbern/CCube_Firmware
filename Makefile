@@ -84,7 +84,7 @@ SRCS += $(wildcard gui/*.c)
 CFLAGS += -Igui/stemwin/user
 CFLAGS += -Igui/stemwin/inc
 LIBS   += -Lgui/stemwin/lib
-LDFLAGS += -lSTemWin522_CM4_GCC
+LDFLAGS += -lSTemWin528_CM4_GCC
 SRCS += $(wildcard gui/stemwin/user/*.c)
 
 #################
