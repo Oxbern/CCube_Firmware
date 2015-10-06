@@ -38,6 +38,8 @@
 /* USER CODE BEGIN Includes */
 
 #include "GUI.h"
+#include "WM.h"
+
 #include "usbd_cdc.h"
 #include "usb_device.h"
 #include "ltdc.h"
@@ -123,6 +125,8 @@ int main(void)
 	GUI_SetColor(GUI_WHITE);
 	GUI_SetFont(GUI_FONT_24_ASCII);
 	GUI_SelectLayer(0);
+
+	//WM_MULTIBUF_Enable(1);
 
 /*
 

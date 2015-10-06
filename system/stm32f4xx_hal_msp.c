@@ -505,9 +505,14 @@ void HAL_LTDC_MspInit(LTDC_HandleTypeDef* hltdc)
     GPIO_InitStruct.Alternate = GPIO_AF14_LTDC;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /* USER CODE BEGIN LTDC_MspInit 1 */
+	// Set LTDC Interrupt to the lowest priority
+	HAL_NVIC_SetPriority(LTDC_IRQn, 0xE, 0);
+
+	// Enable LTDC Interrupt
+	HAL_NVIC_EnableIRQ(LTDC_IRQn);
+
+	// Turn LTDC ON
 	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_SET);
-  /* USER CODE END LTDC_MspInit 1 */
   }
 
 }

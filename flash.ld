@@ -44,7 +44,7 @@ heap_size = 2048;
 /* Specify the memory areas */
 MEMORY
 {
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 1024K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 2048K
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 192K
 CCMRAM (rw)      : ORIGIN = 0x10000000, LENGTH = 64K
 }

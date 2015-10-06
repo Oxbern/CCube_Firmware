@@ -14,6 +14,8 @@
 #define TOTAL_WIDTH  	(HSYNC + HBP + LCD_WIDTH + HFP - 1)
 #define TOTAL_HEIGHT 	(VSYNC + VBP + LCD_HEIGHT + VFP - 1)
 
+extern LTDC_HandleTypeDef hltdc;
+
 void LTDC_Init(void);
 
 #endif

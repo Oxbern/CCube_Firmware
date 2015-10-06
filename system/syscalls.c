@@ -15,8 +15,10 @@ void _exit(int n) {
 label: goto label;       /* plz don't kill me */
 }
 
-static caddr_t _heap_start = (caddr_t)0xC0177000;
-static caddr_t _heap_end = (caddr_t)(0xC0177000+0x500000); /* 5 Mo */
+#define HEAP_START 0xC0400000
+
+static caddr_t _heap_start = (caddr_t)HEAP_START;
+static caddr_t _heap_end = (caddr_t)(HEAP_START+0x500000); /* 5 Mo */
 static caddr_t heap_ptr = (caddr_t)NULL;
 
 void * _sbrk_r(struct _reent *_s_r, ptrdiff_t nbytes)

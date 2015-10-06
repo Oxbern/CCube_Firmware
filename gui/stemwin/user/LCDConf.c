@@ -51,8 +51,14 @@ Purpose     : Display controller configuration (single layer)
   ******************************************************************************
   */
 
+#include "stm32f4xx_hal.h"
 #include "GUI.h"
 #include "GUIDRV_Lin.h"
+#include "dma2d.h"
+#include "ltdc.h"
+
+#include "LCDConf.h"
+#include "GUI_Private.h"
 
 /*********************************************************************
 *
@@ -65,18 +71,35 @@ Purpose     : Display controller configuration (single layer)
 //
 #define XSIZE_PHYS 800
 #define YSIZE_PHYS 480
+
+
+#define BK_COLOR GUI_DARKBLUE
+
+#undef GUI_NUM_LAYERS
+#define GUI_NUM_LAYERS 2
 //
 // Color conversion
 //
-#define COLOR_CONVERSION GUICC_8888
+#define COLOR_CONVERSION_0 GUICC_M8888I
+
+#if (GUI_NUM_LAYERS > 1)
+	#define COLOR_CONVERSION_1 GUICC_M1555I
+
+#endif
+
 //
 // Display driver
 //
-#define DISPLAY_DRIVER GUIDRV_LIN_32
+#define DISPLAY_DRIVER_0 GUIDRV_LIN_32
+
+#if (GUI_NUM_LAYERS > 1)
+	#define DISPLAY_DRIVER_1 GUIDRV_LIN_16
+
+#endif
 //
 // Buffers / VScreens
 //
-#define NUM_BUFFERS  1 // Number of multiple buffers to be used
+#define NUM_BUFFERS  3 // Number of multiple buffers to be used
 #define NUM_VSCREENS 1 // Number of virtual screens to be used
 /*********************************************************************
 *
@@ -84,19 +107,33 @@ Purpose     : Display controller configuration (single layer)
 *
 **********************************************************************
 */
-#ifndef   VRAM_ADDR
-  #define VRAM_ADDR 0xC0000000 // TBD by customer: This has to be the frame buffer start address
+#define LCD_LAYER0_FRAME_BUFFER ((int)0xC0000000)
+#define LCD_LAYER1_FRAME_BUFFER ((int)0xC0200000)
+
+
+static LCD_LayerPropTypedef layerprop[GUI_NUM_LAYERS]
+
+static const LCD_API_COLOR_CONV * apColorConvAPI[] = 
+{
+	COLOR_CONVERSION_0,
+#if GUI_NUM_LAYERS > 1
+	COLOR_CONVERSION_1,
 #endif
+};
+
+//#ifndef   VRAM_ADDR
+//  #define VRAM_ADDR 0xC0000000 // TBD by customer: This has to be the frame buffer start address
+//#endif
 #ifndef   XSIZE_PHYS
   #error Physical X size of display is not defined!
 #endif
 #ifndef   YSIZE_PHYS
   #error Physical Y size of display is not defined!
 #endif
-#ifndef   COLOR_CONVERSION
+#ifndef   COLOR_CONVERSION_0
   #error Color conversion not defined!
 #endif
-#ifndef   DISPLAY_DRIVER
+#ifndef   DISPLAY_DRIVER_0
   #error No display driver defined!
 #endif
 #ifndef   NUM_VSCREENS
@@ -109,6 +146,43 @@ Purpose     : Display controller configuration (single layer)
 #if (NUM_VSCREENS > 1) && (NUM_BUFFERS > 1)
   #error Virtual screens and multiple buffers are not allowed!
 #endif
+
+/*********************************************************************
+*
+*      Private code
+*
+*********************************************************************/
+
+static void     DMA2D_CopyBuffer(U32 LayerIndex, void * pSrc, void * pDst, U32 xSize, U32 ySize, U32 OffLineSrc, U32 OffLineDst);
+static void     DMA2D_FillBuffer(U32 LayerIndex, void * pDst, U32 xSize, U32 ySize, U32 OffLine, U32 ColorIndex);
+
+static void     LCD_LL_CopyBuffer(int LayerIndex, int IndexSrc, int IndexDst);
+static void     LCD_LL_CopyRect(int LayerIndex, int x0, int y0, int x1, int y1, int xSize, int ySize);
+static void     LCD_LL_FillRect(int LayerIndex, int x0, int y0, int x1, int y1, U32 PixelIndex);
+static void     LCD_LL_DrawBitmap32bpp(int LayerIndex, int x, int y, U8 const * p,  int xSize, int ySize, int BytesPerLine);
+
+static inline U32 LCD_LL_GetPixelformat(U32 LayerIndex)
+{
+  if (LayerIndex == 0)
+  {
+    return LTDC_PIXEL_FORMAT_ARGB8888;
+  } 
+  else
+  {
+    return LTDC_PIXEL_FORMAT_ARGB1555;
+  } 
+}
+
+static void _CopyBuffer(int LayerIndex, int IndexSrc, int IndexDst)
+{
+	unsigned long AddrSrc, AddrDst;
+
+	AddrSrc = VRAM_ADDR + BUFFER_SIZE * IndexSrc;
+	AddrDst = VRAM_ADDR + BUFFER_SIZE * IndexDst;
+
+	DMA2D_copy_buffer((uint32_t)AddrSrc, (uint32_t)AddrDst);
+}
+
 
 /*********************************************************************
 *
@@ -126,16 +200,22 @@ Purpose     : Display controller configuration (single layer)
 *   
 */
 void LCD_X_Config(void) {
+
+  uint32_t i;
+
   //
   // At first initialize use of multiple buffers on demand
   //
-  #if (NUM_BUFFERS > 1)
-    GUI_MULTIBUF_Config(NUM_BUFFERS);
-  #endif
+#if (NUM_BUFFERS > 1)
+	for (uint32_t i = 0; i < GUI_NUM_LAYERS; i++)
+	{
+		GUI_MULTIBUF_ConfigEx(i, NUM_BUFFERS);
+	}
+#endif
   //
   // Set display driver and color conversion for 1st layer
   //
-  GUI_DEVICE_CreateAndLink(DISPLAY_DRIVER, COLOR_CONVERSION, 0, 0);
+  GUI_DEVICE_CreateAndLink(DISPLAY_DRIVER_0, COLOR_CONVERSION_0, 0, 0);
   //
   // Display driver configuration, required for Lin-driver
   //
@@ -146,13 +226,52 @@ void LCD_X_Config(void) {
     LCD_SetSizeEx (0, XSIZE_PHYS, YSIZE_PHYS);
     LCD_SetVSizeEx(0, XSIZE_PHYS, YSIZE_PHYS * NUM_VSCREENS);
   }
-  LCD_SetVRAMAddrEx(0, (void *)VRAM_ADDR);
-  //
-  // Set user palette data (only required if no fixed palette is used)
-  //
-  #if defined(PALETTE)
-    LCD_SetLUTEx(0, PALETTE);
-  #endif
+
+#if (GUI_NUM_LAYERS > 1) 
+
+    /* Set display driver and color conversion for 2nd layer */
+    GUI_DEVICE_CreateAndLink(DISPLAY_DRIVER_1, COLOR_CONVERSION_1, 0, 1);
+    
+    /* Set size of 2nd layer */
+    if (LCD_GetSwapXYEx(1)) {
+      LCD_SetSizeEx (1, YSIZE_PHYS, XSIZE_PHYS);
+      LCD_SetVSizeEx(1, YSIZE_PHYS * NUM_VSCREENS, XSIZE_PHYS);
+    } else {
+      LCD_SetSizeEx (1, XSIZE_PHYS, YSIZE_PHYS);
+      LCD_SetVSizeEx(1, XSIZE_PHYS, YSIZE_PHYS * NUM_VSCREENS);
+    }
+#endif
+
+    /*Initialize GUI Layer structure */
+    layer_prop[0].address = LCD_LAYER0_FRAME_BUFFER;
+
+#if (GUI_NUM_LAYERS > 1)    
+    layer_prop[1].address = LCD_LAYER1_FRAME_BUFFER; 
+#endif
+   /* Setting up VRam address and LCD_LL functions for CopyBuffer-, CopyRect- and FillRect operations */
+  for (i = 0; i < GUI_NUM_LAYERS; i++) 
+  {
+
+    layer_prop[i].pColorConvAPI = (LCD_API_COLOR_CONV *)apColorConvAPI[i];
+     
+    layer_prop[i].pending_buffer = -1;
+
+    /* Set VRAM address */
+    LCD_SetVRAMAddrEx(i, (void *)(layer_prop[i].address));
+
+    /* Remember color depth for further operations */
+    layer_prop[i].BytesPerPixel = LCD_GetBitsPerPixelEx(i) >> 3;
+
+    /* Set LCD_LL functions for several operations */
+    LCD_SetDevFunc(i, LCD_DEVFUNC_COPYBUFFER, (void(*)(void))LCD_LL_CopyBuffer);
+    LCD_SetDevFunc(i, LCD_DEVFUNC_COPYRECT,   (void(*)(void))LCD_LL_CopyRect);
+    LCD_SetDevFunc(i, LCD_DEVFUNC_FILLRECT, (void(*)(void))LCD_LL_FillRect);
+
+    /* Set up drawing routine for 32bpp bitmap using DMA2D */
+    if (LCD_LL_GetPixelformat(i) == LTDC_PIXEL_FORMAT_ARGB8888) {
+     LCD_SetDevFunc(i, LCD_DEVFUNC_DRAWBMP_32BPP, (void(*)(void))LCD_LL_DrawBitmap32bpp);     /* Set up drawing routine for 32bpp bitmap using DMA2D. Makes only sense with ARGB8888 */
+    }    
+  }
 }
 
 /*********************************************************************
@@ -178,6 +297,7 @@ void LCD_X_Config(void) {
 */
 int LCD_X_DisplayDriver(unsigned LayerIndex, unsigned Cmd, void * pData) {
   int r;
+  unsigned long Addr;
 
   switch (Cmd) {
   case LCD_X_INITCONTROLLER: {
@@ -213,9 +333,11 @@ int LCD_X_DisplayDriver(unsigned LayerIndex, unsigned Cmd, void * pData) {
     //
     // Required if multiple buffers are used. The 'Index' element of p contains the buffer index.
     //
-    // LCD_X_SHOWBUFFER_INFO * p;
-    // p = (LCD_X_SHOWBUFFER_INFO *)pData;
-    //...
+    LCD_X_SHOWBUFFER_INFO * p;
+    p = (LCD_X_SHOWBUFFER_INFO *)pData;
+    Addr = LCD_LAYER0_FRAME_BUFFER + BUFFER_SIZE * p->Index;
+	HAL_LTDC_SetAddress(&hltdc, (uint32_t)Addr, 0);
+	GUI_MULTIBUF_Confirm(p->Index);
     return 0;
   }
   case LCD_X_SETLUTENTRY: {
