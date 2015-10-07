@@ -1,0 +1,145 @@
+{
+    "children": [
+        {
+            "description": "simple pattern 1",
+            "image": "",
+            "name": "pattern1",
+            "options": [
+                {
+                    "option": "blink",
+                    "period": 200,
+                    "point": [
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ],
+            "points": [
+                [
+                    7,
+                    5,
+                    3
+                ],
+                [
+                    5,
+                    5,
+                    3
+                ],
+                [
+                    7,
+                    7,
+                    3
+                ],
+                [
+                    5,
+                    7,
+                    3
+                ],
+                [
+                    6,
+                    6,
+                    2
+                ],
+                [
+                    7,
+                    7,
+                    1
+                ],
+                [
+                    5,
+                    7,
+                    1
+                ],
+                [
+                    5,
+                    5,
+                    1
+                ],
+                [
+                    7,
+                    5,
+                    1
+                ]
+            ],
+            "type": "pattern"
+        },
+        {
+            "children": [
+                {
+                    "description": "simple second pattern",
+                    "image": "",
+                    "name": "pattern11",
+                    "options": [
+                        {
+                            "i": [
+                                0,
+                                0,
+                                0
+                            ],
+                            "j": [
+                                0,
+                                0,
+                                0
+                            ],
+                            "k": [
+                                0,
+                                0,
+                                0
+                            ],
+                            "option": "duplicate"
+                        }
+                    ],
+                    "points": [
+                        [
+                            8,
+                            8,
+                            3
+                        ],
+                        [
+                            8,
+                            0,
+                            3
+                        ],
+                        [
+                            0,
+                            8,
+                            3
+                        ],
+                        [
+                            0,
+                            0,
+                            3
+                        ],
+                        [
+                            8,
+                            8,
+                            2
+                        ],
+                        [
+                            8,
+                            0,
+                            2
+                        ],
+                        [
+                            0,
+                            0,
+                            2
+                        ],
+                        [
+                            0,
+                            8,
+                            2
+                        ]
+                    ],
+                    "type": "pattern"
+                }
+            ],
+            "name": "group1",
+            "type": "group"
+        }
+    ],
+    "name": "db1",
+    "type": "group",
+    "version": "1"
+}

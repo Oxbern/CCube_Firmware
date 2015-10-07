@@ -1,0 +1,71 @@
+{
+    "children": [
+        {
+            "description": "simple pattern 1",
+            "image": "",
+            "name": "pattern1",
+            "options": [
+                {
+                    "option": "blink",
+                    "period": 200,
+                    "point": [
+                        0,
+                        0,
+                        0
+                    ]
+                }
+            ],
+            "points": [
+                [
+                    7,
+                    5,
+                    3
+                ],
+                [
+                    5,
+                    5,
+                    3
+                ],
+                [
+                    7,
+                    7,
+                    3
+                ],
+                [
+                    5,
+                    7,
+                    3
+                ],
+                [
+                    6,
+                    6,
+                    2
+                ],
+                [
+                    7,
+                    7,
+                    1
+                ],
+                [
+                    5,
+                    7,
+                    1
+                ],
+                [
+                    5,
+                    5,
+                    1
+                ],
+                [
+                    7,
+                    5,
+                    1
+                ]
+            ],
+            "type": "pattern"
+        }
+    ],
+    "name": "db1",
+    "type": "group",
+    "version": "1"
+}

@@ -27,6 +27,7 @@
 #include "json-builder.h"
 #include "led.h"
 #include "console.h"
+#include "database_utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -213,6 +214,23 @@ FRESULT scan_files (
     return res;
 }
 
+database_t * db = NULL;
+
+void run_db(void)
+{
+	
+	printf("Database name : %s\n", db->name);
+	printf("Database nb children : %i\n", (int)db->nb_motifs);
+	for (uint32_t i = 0; i < db->nb_motifs; i++)
+	{
+		motif_t * m = db->motifs;
+		printf("    motif %i:\n", (int)i);
+		printf("        name : %s\n", m->name);
+		printf("        desc : %s\n", m->desc);
+		printf("        img  : %s\n", m->image);
+	}
+}
+
 
 void _cbHBKWIN(WM_MESSAGE * pMsg)
 {
@@ -246,6 +264,14 @@ void _cbHBKWIN(WM_MESSAGE * pMsg)
 							printf("is a directory\n");
 						} else {
 							printf("is a file\n");
+							char * file_str = file2string(selfd->path);
+							db = string2database(file_str);
+							if (db)
+							{
+								run_db();
+							} else {
+								printf("Error loading database\n");
+							}
 						}
 						
 						break;
@@ -297,66 +323,6 @@ void StartFsTask(void const * argument)
 	WM_SetCallback(WM_HBKWIN, _cbHBKWIN);
 	WM_SetFocus(filesystem);
 	taskEXIT_CRITICAL();
-	FIL my_file;
-	char* str;
-	FRESULT res1 = f_open(&my_file, "soutenance.ccdb", FA_READ);
-	if (res1 != FR_OK)
-	{
-		printf("f_open error\n");
-	} else {
-		// kwerky way to get clean file size
-		uint32_t file_size = f_size(&my_file);
-		str = malloc(file_size);
-
-		// read the file in a buffer
-		f_lseek(&my_file, 0);
-		uint32_t bytesread; // TODO check bytesead agains lenght
-		//taskENTER_CRITICAL();
-		FRESULT res = f_read(&my_file, str, file_size, (UINT*)&bytesread);
-		//taskEXIT_CRITICAL();
-		str[file_size-1] = '\0';
-		f_close(&my_file);
-		if (res != FR_OK)
-		{
-			printf("f_read error\n");
-		} else {
-			//printf("%s\n", str);
-			
-			json_settings settings = {};
-			settings.value_extra = json_builder_extra;
-
-			char error[128];
-			json_value * arr = json_parse_ex(&settings, str, strlen(str), error);
-
-			/* Now serialize it again.
-			 
-			char * buf = malloc(json_measure(arr));
-			json_serialize(buf, arr);
-
-			printf("%s\n", buf);
-			*/
-
-			int nb_points = arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.length;
-
-			//printf("%i\n", nb_points);
-
-			for (int i = 0; i < nb_points; i++)
-			{
-				/*
-				printf("[%i,%i,%i]\n",
-						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[0]->u.integer,
-						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[1]->u.integer,
-						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[2]->u.integer
-				);
-				*/
-				led_set((int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[0]->u.integer,
-						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[1]->u.integer,
-						(int) arr->u.object.values[0].value->u.array.values[0]->u.object.values[4].value->u.array.values[i]->u.array.values[2]->u.integer
-				);
-			}
-			
-		}
-	}
 
     while(1)
     {

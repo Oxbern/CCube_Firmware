@@ -168,16 +168,19 @@ static const LCD_API_COLOR_CONV * apColorConvAPI[] =
 *
 *********************************************************************/
 
+/*
 static void     DMA2D_CopyBuffer(U32 LayerIndex, void * pSrc, void * pDst, U32 xSize, U32 ySize, U32 OffLineSrc, U32 OffLineDst);
 static void     DMA2D_FillBuffer(U32 LayerIndex, void * pDst, U32 xSize, U32 ySize, U32 OffLine, U32 ColorIndex);
+*/
 
 static void     LCD_LL_Init(void);
 static void     LCD_LL_LayerInit(U32 LayerIndex);
+/*
 static void     LCD_LL_CopyBuffer(int LayerIndex, int IndexSrc, int IndexDst);
 static void     LCD_LL_CopyRect(int LayerIndex, int x0, int y0, int x1, int y1, int xSize, int ySize);
 static void     LCD_LL_FillRect(int LayerIndex, int x0, int y0, int x1, int y1, U32 PixelIndex);
 static void     LCD_LL_DrawBitmap32bpp(int LayerIndex, int x, int y, U8 const * p,  int xSize, int ySize, int BytesPerLine);
-
+*/
 static inline U32 LCD_LL_GetPixelformat(U32 LayerIndex)
 {
   if (LayerIndex == 0)
@@ -339,8 +342,6 @@ void LCD_X_Config(void) {
 int LCD_X_DisplayDriver(unsigned LayerIndex, unsigned Cmd, void * pData) {
   int r = 0;
   uint32_t addr;
-  int xPos, yPos;
-  uint32_t Color;
 
   switch (Cmd) {
   case LCD_X_INITCONTROLLER: {
@@ -499,6 +500,7 @@ static void LCD_LL_Init(void)
   * @param  LayerIndex : Layer Index 
   * @retval Status ( 0 : 0k , 1: error)
   */
+/*
 static void DMA2D_CopyBuffer(U32 LayerIndex, void * pSrc, void * pDst, U32 xSize, U32 ySize, U32 OffLineSrc, U32 OffLineDst)
 {
   U32 PixelFormat;
@@ -506,25 +508,21 @@ static void DMA2D_CopyBuffer(U32 LayerIndex, void * pSrc, void * pDst, U32 xSize
   PixelFormat = LCD_LL_GetPixelformat(LayerIndex);
   DMA2D->CR      = 0x00000000UL | (1 << 9);  
   	
-  /* Set up pointers */
   DMA2D->FGMAR   = (U32)pSrc;                       
   DMA2D->OMAR    = (U32)pDst;                       
   DMA2D->FGOR    = OffLineSrc;                      
   DMA2D->OOR     = OffLineDst; 
   
-  /* Set up pixel format */  
   DMA2D->FGPFCCR = PixelFormat;  
   
-  /*  Set up size */
   DMA2D->NLR     = (U32)(xSize << 16) | (U16)ySize; 
   
   DMA2D->CR     |= DMA2D_CR_START;   
  
-  /* Wait until transfer is done */
   while (DMA2D->CR & DMA2D_CR_START) 
   {
   }
-}
+}*/
 
 /**
   * @brief  Fill Buffer
@@ -536,6 +534,7 @@ static void DMA2D_CopyBuffer(U32 LayerIndex, void * pSrc, void * pDst, U32 xSize
   * @param  ColorIndex:  color to be used.           
   * @retval None.
   */
+/*
 static void DMA2D_FillBuffer(U32 LayerIndex, void * pDst, U32 xSize, U32 ySize, U32 OffLine, U32 ColorIndex) 
 {
 
@@ -543,29 +542,23 @@ static void DMA2D_FillBuffer(U32 LayerIndex, void * pDst, U32 xSize, U32 ySize, 
 
   PixelFormat = LCD_LL_GetPixelformat(LayerIndex);
 	
-  /* Set up mode */
   DMA2D->CR      = 0x00030000UL | (1 << 9);        
   DMA2D->OCOLR   = ColorIndex;                     
 
-  /* Set up pointers */
   DMA2D->OMAR    = (U32)pDst;                      
 
-  /* Set up offsets */
   DMA2D->OOR     = OffLine;                        
 
-  /* Set up pixel format */
   DMA2D->OPFCCR  = PixelFormat;                    
 
-  /*  Set up size */
   DMA2D->NLR     = (U32)(xSize << 16) | (U16)ySize;
     
   DMA2D->CR     |= DMA2D_CR_START; 
   
-  /* Wait until transfer is done */
   while (DMA2D->CR & DMA2D_CR_START) 
   {
   }
-}
+}*/
 
 
 /**
@@ -573,13 +566,14 @@ static void DMA2D_FillBuffer(U32 LayerIndex, void * pDst, U32 xSize, U32 ySize, 
   * @param  LayerIndex : Layer Index           
   * @retval None.
   */
+/*
 static U32 GetBufferSize(U32 LayerIndex) 
 {
   U32 BufferSize;
 
   BufferSize = layer_prop[LayerIndex].xSize * layer_prop[LayerIndex].ySize * layer_prop[LayerIndex].BytesPerPixel;
   return BufferSize;
-}
+}*/
 
 /**
   * @brief  LCD_LLized copy buffer
@@ -588,6 +582,7 @@ static U32 GetBufferSize(U32 LayerIndex)
   * @param  IndexDst:    index destination           
   * @retval None.
   */
+/*
 static void LCD_LL_CopyBuffer(int LayerIndex, int IndexSrc, int IndexDst) {
   U32 BufferSize, AddrSrc, AddrDst;
 
@@ -596,7 +591,7 @@ static void LCD_LL_CopyBuffer(int LayerIndex, int IndexSrc, int IndexDst) {
   AddrDst    = layer_prop[LayerIndex].address + BufferSize * IndexDst;
   DMA2D_CopyBuffer(LayerIndex, (void *)AddrSrc, (void *)AddrDst, layer_prop[LayerIndex].xSize, layer_prop[LayerIndex].ySize, 0, 0);
   layer_prop[LayerIndex].buffer_index = IndexDst;
-}
+}*/
 
 /**
   * @brief  Copy rectangle
@@ -609,6 +604,7 @@ static void LCD_LL_CopyBuffer(int LayerIndex, int IndexSrc, int IndexDst) {
   * @param  ySize:       Y size.            
   * @retval None.
   */
+/*
 static void LCD_LL_CopyRect(int LayerIndex, int x0, int y0, int x1, int y1, int xSize, int ySize) 
 {
   U32 BufferSize, AddrSrc, AddrDst;
@@ -618,6 +614,7 @@ static void LCD_LL_CopyRect(int LayerIndex, int x0, int y0, int x1, int y1, int 
   AddrDst = layer_prop[LayerIndex].address + BufferSize * layer_prop[LayerIndex].pending_buffer + (y1 * layer_prop[LayerIndex].xSize + x1) * layer_prop[LayerIndex].BytesPerPixel;
   DMA2D_CopyBuffer(LayerIndex, (void *)AddrSrc, (void *)AddrDst, xSize, ySize, layer_prop[LayerIndex].xSize - xSize, 0);
 }
+*/
 
 /**
   * @brief  Fill rectangle
@@ -629,6 +626,7 @@ static void LCD_LL_CopyRect(int LayerIndex, int x0, int y0, int x1, int y1, int 
   * @param  PixelIndex:  Pixel index.             
   * @retval None.
   */
+/*
 static void LCD_LL_FillRect(int LayerIndex, int x0, int y0, int x1, int y1, U32 PixelIndex) 
 {
   U32 BufferSize, AddrDst;
@@ -648,7 +646,7 @@ static void LCD_LL_FillRect(int LayerIndex, int x0, int y0, int x1, int y1, U32 
     AddrDst = layer_prop[LayerIndex].address + BufferSize * layer_prop[LayerIndex].buffer_index + (y0 * layer_prop[LayerIndex].xSize + x0) * layer_prop[LayerIndex].BytesPerPixel;
     DMA2D_FillBuffer(LayerIndex, (void *)AddrDst, xSize, ySize, layer_prop[LayerIndex].xSize - xSize, PixelIndex);
   }
-}
+}*/
 
 /**
   * @brief  Draw indirect color bitmap
@@ -661,6 +659,7 @@ static void LCD_LL_FillRect(int LayerIndex, int x0, int y0, int x1, int y1, U32 
   * @param  ySize: Y size
   * @retval None
   */
+/*
 static void LCD_LL_DrawBitmap32bpp(int LayerIndex, int x, int y, U8 const * p, int xSize, int ySize, int BytesPerLine)
 {
   U32 BufferSize, AddrDst;
@@ -671,7 +670,7 @@ static void LCD_LL_DrawBitmap32bpp(int LayerIndex, int x, int y, U8 const * p, i
   OffLineSrc = (BytesPerLine / 4) - xSize;
   OffLineDst = layer_prop[LayerIndex].xSize - xSize;
   DMA2D_CopyBuffer(LayerIndex, (void *)p, (void *)AddrDst, xSize, ySize, OffLineSrc, OffLineDst);
-}
+}*/
 
 
 

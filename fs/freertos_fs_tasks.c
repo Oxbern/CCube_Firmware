@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-
+/*
 static bool correct_extention(char * filename)
 {
 	char * point;
@@ -22,7 +22,7 @@ static bool correct_extention(char * filename)
 	} else {
 		return false;
 	}
-}
+}*/
 
 typedef struct folder {
 	char * name;
