@@ -1,16 +1,15 @@
 /*********************************************************************
-*          Portions COPYRIGHT 2013 STMicroelectronics                *
-*          Portions SEGGER Microcontroller GmbH & Co. KG             *
+*                SEGGER Microcontroller GmbH & Co. KG                *
 *        Solutions for real time microcontroller applications        *
 **********************************************************************
 *                                                                    *
-*        (c) 1996 - 2013  SEGGER Microcontroller GmbH & Co. KG       *
+*        (c) 1996 - 2015  SEGGER Microcontroller GmbH & Co. KG       *
 *                                                                    *
 *        Internet: www.segger.com    Support:  support@segger.com    *
 *                                                                    *
 **********************************************************************
 
-** emWin V5.22 - Graphical user interface for embedded applications **
+** emWin V5.28 - Graphical user interface for embedded applications **
 All  Intellectual Property rights  in the Software belongs to  SEGGER.
 emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
@@ -31,25 +30,6 @@ File        : MENU.h
 Purpose     : MENU include
 --------------------END-OF-HEADER-------------------------------------
 */
-
-/**
-  ******************************************************************************
-  * @attention
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
 
 #ifndef MENU_H
 #define MENU_H
@@ -242,7 +222,7 @@ void      MENU_InsertItem   (MENU_Handle hObj, U16 ItemId, const MENU_ITEM_DATA 
 void      MENU_Popup        (MENU_Handle hObj, WM_HWIN hDestWin, int x, int y, int xSize, int ySize, int Flags);
 void      MENU_SetBkColor   (MENU_Handle hObj, unsigned ColorIndex, GUI_COLOR Color);
 void      MENU_SetBorderSize(MENU_Handle hObj, unsigned BorderIndex, U8 BorderSize);
-void      MENU_SetFont      (MENU_Handle hObj, const GUI_FONT GUI_UNI_PTR * pFont);
+void      MENU_SetFont      (MENU_Handle hObj, const GUI_FONT * pFont);
 void      MENU_SetItem      (MENU_Handle hObj, U16 ItemId, const MENU_ITEM_DATA * pItemData);
 void      MENU_SetOwner     (MENU_Handle hObj, WM_HWIN hOwner);
 int       MENU_SetSel       (MENU_Handle hObj, int Sel);
@@ -255,16 +235,16 @@ int       MENU_SetUserData  (MENU_Handle hObj, const void * pSrc, int NumBytes);
 *
 **********************************************************************
 */
-GUI_COLOR                    MENU_GetDefaultTextColor  (unsigned ColorIndex);
-GUI_COLOR                    MENU_GetDefaultBkColor    (unsigned ColorIndex);
-U8                           MENU_GetDefaultBorderSize (unsigned BorderIndex);
-const WIDGET_EFFECT *        MENU_GetDefaultEffect     (void);
-const GUI_FONT GUI_UNI_PTR * MENU_GetDefaultFont       (void);
-void                         MENU_SetDefaultTextColor  (unsigned ColorIndex, GUI_COLOR Color);
-void                         MENU_SetDefaultBkColor    (unsigned ColorIndex, GUI_COLOR Color);
-void                         MENU_SetDefaultBorderSize (unsigned BorderIndex, U8 BorderSize);
-void                         MENU_SetDefaultEffect     (const WIDGET_EFFECT * pEffect);
-void                         MENU_SetDefaultFont       (const GUI_FONT GUI_UNI_PTR * pFont);
+GUI_COLOR             MENU_GetDefaultTextColor  (unsigned ColorIndex);
+GUI_COLOR             MENU_GetDefaultBkColor    (unsigned ColorIndex);
+U8                    MENU_GetDefaultBorderSize (unsigned BorderIndex);
+const WIDGET_EFFECT * MENU_GetDefaultEffect     (void);
+const GUI_FONT      * MENU_GetDefaultFont       (void);
+void                  MENU_SetDefaultTextColor  (unsigned ColorIndex, GUI_COLOR Color);
+void                  MENU_SetDefaultBkColor    (unsigned ColorIndex, GUI_COLOR Color);
+void                  MENU_SetDefaultBorderSize (unsigned BorderIndex, U8 BorderSize);
+void                  MENU_SetDefaultEffect     (const WIDGET_EFFECT * pEffect);
+void                  MENU_SetDefaultFont       (const GUI_FONT * pFont);
 
 /*********************************************************************
 *

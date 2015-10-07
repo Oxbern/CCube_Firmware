@@ -1,16 +1,15 @@
 /*********************************************************************
-*          Portions COPYRIGHT 2013 STMicroelectronics                *
-*          Portions SEGGER Microcontroller GmbH & Co. KG             *
+*                SEGGER Microcontroller GmbH & Co. KG                *
 *        Solutions for real time microcontroller applications        *
 **********************************************************************
 *                                                                    *
-*        (c) 1996 - 2013  SEGGER Microcontroller GmbH & Co. KG       *
+*        (c) 1996 - 2015  SEGGER Microcontroller GmbH & Co. KG       *
 *                                                                    *
 *        Internet: www.segger.com    Support:  support@segger.com    *
 *                                                                    *
 **********************************************************************
 
-** emWin V5.22 - Graphical user interface for embedded applications **
+** emWin V5.28 - Graphical user interface for embedded applications **
 All  Intellectual Property rights  in the Software belongs to  SEGGER.
 emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
@@ -31,25 +30,6 @@ File        : SLIDER.h
 Purpose     : SLIDER include
 --------------------END-OF-HEADER-------------------------------------
 */
-
-/**
-  ******************************************************************************
-  * @attention
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
 
 #ifndef SLIDER_H
 #define SLIDER_H
@@ -142,22 +122,25 @@ void SLIDER_Callback(WM_MESSAGE * pMsg);
 *
 **********************************************************************
 */
-void      SLIDER_Dec          (SLIDER_Handle hObj);
-GUI_COLOR SLIDER_GetBarColor  (SLIDER_Handle hObj);
-GUI_COLOR SLIDER_GetBkColor   (SLIDER_Handle hObj);
-GUI_COLOR SLIDER_GetFocusColor(SLIDER_Handle hObj);
-GUI_COLOR SLIDER_GetTickColor (SLIDER_Handle hObj);
-int       SLIDER_GetUserData  (SLIDER_Handle hObj, void * pDest, int NumBytes);
-void      SLIDER_Inc          (SLIDER_Handle hObj);
-void      SLIDER_SetBarColor  (SLIDER_Handle hObj, GUI_COLOR Color);
-void      SLIDER_SetBkColor   (SLIDER_Handle hObj, GUI_COLOR Color);
-GUI_COLOR SLIDER_SetFocusColor(SLIDER_Handle hObj, GUI_COLOR Color);
-void      SLIDER_SetNumTicks  (SLIDER_Handle hObj, int NumTicks);
-void      SLIDER_SetRange     (SLIDER_Handle hObj, int Min, int Max);
-void      SLIDER_SetTickColor (SLIDER_Handle hObj, GUI_COLOR Color);
-int       SLIDER_SetUserData  (SLIDER_Handle hObj, const void * pSrc, int NumBytes);
-void      SLIDER_SetValue     (SLIDER_Handle hObj, int v);
-void      SLIDER_SetWidth     (SLIDER_Handle hObj, int Width);
+void      SLIDER_Dec            (SLIDER_Handle hObj);
+void      SLIDER_EnableFocusRect(SLIDER_Handle hObj, int OnOff);
+GUI_COLOR SLIDER_GetBarColor    (SLIDER_Handle hObj);
+GUI_COLOR SLIDER_GetBkColor     (SLIDER_Handle hObj);
+U8        SLIDER_GetFlag        (SLIDER_Handle hObj, U8 Flag);
+GUI_COLOR SLIDER_GetFocusColor  (SLIDER_Handle hObj);
+GUI_COLOR SLIDER_GetTickColor   (SLIDER_Handle hObj);
+int       SLIDER_GetUserData    (SLIDER_Handle hObj, void * pDest, int NumBytes);
+int       SLIDER_GetValue       (SLIDER_Handle hObj);
+void      SLIDER_Inc            (SLIDER_Handle hObj);
+void      SLIDER_SetBarColor    (SLIDER_Handle hObj, GUI_COLOR Color);
+void      SLIDER_SetBkColor     (SLIDER_Handle hObj, GUI_COLOR Color);
+GUI_COLOR SLIDER_SetFocusColor  (SLIDER_Handle hObj, GUI_COLOR Color);
+void      SLIDER_SetNumTicks    (SLIDER_Handle hObj, int NumTicks);
+void      SLIDER_SetRange       (SLIDER_Handle hObj, int Min, int Max);
+void      SLIDER_SetTickColor   (SLIDER_Handle hObj, GUI_COLOR Color);
+int       SLIDER_SetUserData    (SLIDER_Handle hObj, const void * pSrc, int NumBytes);
+void      SLIDER_SetValue       (SLIDER_Handle hObj, int v);
+void      SLIDER_SetWidth       (SLIDER_Handle hObj, int Width);
 
 /*********************************************************************
 *
@@ -189,14 +172,6 @@ void      SLIDER_SetDefaultBkColor   (GUI_COLOR Color);
 void      SLIDER_SetDefaultBarColor  (GUI_COLOR Color);
 GUI_COLOR SLIDER_SetDefaultFocusColor(GUI_COLOR Color);
 void      SLIDER_SetDefaultTickColor (GUI_COLOR Color);
-
-/*********************************************************************
-*
-*       Query state
-*
-**********************************************************************
-*/
-int SLIDER_GetValue(SLIDER_Handle hObj);
 
 #if defined(__cplusplus)
   }

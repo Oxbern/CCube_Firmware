@@ -1,16 +1,15 @@
 /*********************************************************************
-*          Portions COPYRIGHT 2013 STMicroelectronics                *
-*          Portions SEGGER Microcontroller GmbH & Co. KG             *
+*                SEGGER Microcontroller GmbH & Co. KG                *
 *        Solutions for real time microcontroller applications        *
 **********************************************************************
 *                                                                    *
-*        (c) 1996 - 2013  SEGGER Microcontroller GmbH & Co. KG       *
+*        (c) 1996 - 2015  SEGGER Microcontroller GmbH & Co. KG       *
 *                                                                    *
 *        Internet: www.segger.com    Support:  support@segger.com    *
 *                                                                    *
 **********************************************************************
 
-** emWin V5.22 - Graphical user interface for embedded applications **
+** emWin V5.28 - Graphical user interface for embedded applications **
 All  Intellectual Property rights  in the Software belongs to  SEGGER.
 emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
@@ -31,25 +30,6 @@ File        : DROPDOWN_Private.h
 Purpose     : DROPDOWN private header file
 --------------------END-OF-HEADER-------------------------------------
 */
-
-/**
-  ******************************************************************************
-  * @attention
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
 
 #ifndef DROPDOWN_PRIVATE_H
 #define DROPDOWN_PRIVATE_H
@@ -79,7 +59,7 @@ typedef struct {
 } DROPDOWN_SKIN_PRIVATE;
 
 typedef struct {
-  const GUI_FONT GUI_UNI_PTR * pFont;
+  const GUI_FONT * pFont;
   GUI_COLOR aBackColor[3];
   GUI_COLOR aTextColor[3];
   GUI_COLOR aColor[2];
@@ -91,8 +71,8 @@ typedef struct {
 
 typedef struct {
   WIDGET  Widget;
-  I16     Sel;                        /* current selection */
-  I16     ySizeEx;                    /* Drop down size */
+  I16     Sel;        // Current selection
+  I16     ySizeLB;    // ySize of assigned LISTBOX in expanded state
   I16     TextHeight;
   GUI_ARRAY Handles;
   WM_SCROLL_STATE ScrollState;
@@ -104,9 +84,6 @@ typedef struct {
   U8      ScrollbarWidth;
   char  IsPressed;
   WM_HMEM hDisabled;
-  #if GUI_DEBUG_LEVEL >1
-    U32 DebugId;
-  #endif  
 } DROPDOWN_Obj;
 
 /*********************************************************************
@@ -116,7 +93,7 @@ typedef struct {
 **********************************************************************
 */
 #if GUI_DEBUG_LEVEL >= GUI_DEBUG_LEVEL_CHECK_ALL
-  #define DROPDOWN_INIT_ID(p) p->DebugId = DROPDOWN_ID
+  #define DROPDOWN_INIT_ID(p) (p->Widget.DebugId = DROPDOWN_ID)
 #else
   #define DROPDOWN_INIT_ID(p)
 #endif
@@ -153,5 +130,5 @@ void DROPDOWN__AdjustHeight(DROPDOWN_Handle hObj);
 int  DROPDOWN__GetNumItems (DROPDOWN_Obj * pObj);
 const char * DROPDOWN__GetpItemLocked(DROPDOWN_Handle hObj, int Index);
 
-#endif /* GUI_WINSUPPORT */
-#endif /* DROPDOWN_PRIVATE_H */
+#endif // GUI_WINSUPPORT
+#endif // DROPDOWN_PRIVATE_H

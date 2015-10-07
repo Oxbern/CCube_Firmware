@@ -26,42 +26,75 @@ Full source code is available at: www.segger.com
 
 We appreciate your understanding and fairness.
 ----------------------------------------------------------------------
-File        : GUI_ARRAY_Private.h
-Purpose     : Private array handling routines, should be used only
-              from within GUI_ARRAY... routines!
----------------------------END-OF-HEADER------------------------------
+File        : KNOB.h
+Purpose     : KNOB include
+--------------------END-OF-HEADER-------------------------------------
 */
 
-#ifndef GUI_ARRAY_PRIVATE_H
-#define GUI_ARRAY_PRIVATE_H
+#ifndef KNOB_PRIVATE_H
+#define KNOB_PRIVATE_H
 
-#include "GUI_ARRAY.h"
+#include "KNOB.h"
+#include "GUI_Private.h"
 
-#if GUI_WINSUPPORT
+#if (GUI_SUPPORT_MEMDEV && GUI_WINSUPPORT)
 
 /*********************************************************************
 *
-*       Private types
+*       Object definition
 *
 **********************************************************************
 */
 typedef struct {
-  U16 NumItems;
-  WM_HMEM haHandle;   /* Handle to buffer holding handles */
-} GUI_ARRAY_OBJ;
+  I32 Snap;          // Position where the knob snaps
+  I32 Period;        // Time it takes to stop the knob in ms
+  GUI_COLOR BkColor; // The Bk color
+  I32 Offset;        // the offset
+  I32 MinRange;
+  I32 MaxRange;
+  I32 TickSize;      // Minimum movement range in 1/10 of degree
+  I32 KeyValue;      // Range of movement for one key push
+} KNOB_PROPS;
+
+typedef struct {
+  WIDGET Widget;
+  KNOB_PROPS Props;
+  WM_HMEM hContext;
+  I32 Angle;
+  I32 Value;
+  int xSize;
+  int ySize;
+  GUI_MEMDEV_Handle hMemSrc;
+  GUI_MEMDEV_Handle hMemDst;
+  GUI_MEMDEV_Handle hMemBk;
+} KNOB_OBJ;
 
 /*********************************************************************
 *
-*       Private functions
+*       Macros for internal use
 *
 **********************************************************************
 */
-WM_HMEM GUI_ARRAY__GethItem      (const GUI_ARRAY_OBJ * pThis, unsigned int Index);
-void  * GUI_ARRAY__GetpItem      (const GUI_ARRAY_OBJ * pThis, unsigned int Index);
-void  * GUI_ARRAY__GetpItemLocked(const GUI_ARRAY_OBJ * pThis, unsigned int Index);
-int     GUI_ARRAY__SethItem      (      GUI_ARRAY_OBJ * pThis, unsigned int Index, WM_HMEM hItem);
+#if GUI_DEBUG_LEVEL >= GUI_DEBUG_LEVEL_CHECK_ALL
+  #define KNOB_INIT_ID(p) p->Widget.DebugId = KNOB_ID
+#else
+  #define KNOB_INIT_ID(p)
+#endif
 
-#endif /* GUI_WINSUPPORT */
+#if GUI_DEBUG_LEVEL >= GUI_DEBUG_LEVEL_CHECK_ALL
+  KNOB_OBJ * KNOB_LockH(KNOB_Handle h);
+  #define KNOB_LOCK_H(h)   KNOB_LockH(h)
+#else
+  #define KNOB_LOCK_H(h)   (KNOB_OBJ *)GUI_LOCK_H(h)
+#endif
 
-#endif /* GUI_ARRAY_PRIVATE_H */
+/*********************************************************************
+*
+*       Module internal data
+*
+**********************************************************************
+*/
+extern KNOB_PROPS KNOB__DefaultProps;
 
+#endif   // (GUI_SUPPORT_MEMDEV && GUI_WINSUPPORT)
+#endif   // KNOB_PRIVATE_H

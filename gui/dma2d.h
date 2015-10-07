@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define BUFFER_SIZE 0x177000
+#define BUFFER_SIZE 0x200000
 
 void DMA2D_Init(void);
 

@@ -1,16 +1,15 @@
 /*********************************************************************
-*          Portions COPYRIGHT 2013 STMicroelectronics                *
-*          Portions SEGGER Microcontroller GmbH & Co. KG             *
+*                SEGGER Microcontroller GmbH & Co. KG                *
 *        Solutions for real time microcontroller applications        *
 **********************************************************************
 *                                                                    *
-*        (c) 1996 - 2013  SEGGER Microcontroller GmbH & Co. KG       *
+*        (c) 1996 - 2015  SEGGER Microcontroller GmbH & Co. KG       *
 *                                                                    *
 *        Internet: www.segger.com    Support:  support@segger.com    *
 *                                                                    *
 **********************************************************************
 
-** emWin V5.22 - Graphical user interface for embedded applications **
+** emWin V5.28 - Graphical user interface for embedded applications **
 All  Intellectual Property rights  in the Software belongs to  SEGGER.
 emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
@@ -31,25 +30,6 @@ File        : LCD_SIM.h
 Purpose     : Declares LCD interface functions
 ----------------------------------------------------------------------
 */
-
-/**
-  ******************************************************************************
-  * @attention
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
 
 #ifndef LCDSIM_H
 #define LCDSIM_H
@@ -74,7 +54,6 @@ Purpose     : Declares LCD interface functions
 *
 *************************************************************
 */
-
 void  LCDSIM_PreInit(void);
 char* LCDSIM_Init(void);
 void  LCDSIM_Exit(void);
@@ -93,7 +72,6 @@ void  LCDSIM_SetRGBOrder(unsigned RGBOrder);
 *
 *************************************************************
 */
-
 void LCDSIM_FillRect(int x0, int y0, int x1, int y1, int Index, int LayerIndex);
 int  LCDSIM_GetModifyCnt(int LayerIndex);
 int  LCDSIM_GetModifyCntInfo(int LayerIndex);
@@ -120,6 +98,7 @@ void LCDSIM_SetChroma(int LayerIndex, LCD_COLOR ChromaMin, LCD_COLOR ChromaMax);
 void LCDSIM_SetCompositeColor(U32 Color);
 void LCDSIM_SetCompositeSize(int xSize, int ySize);
 void LCDSIM_CopyBuffer(int LayerIndex, int IndexSrc, int IndexDst);
+void LCDSIM_Invalidate(int LayerIndex);
 
 /********************************************************************
 *
@@ -143,6 +122,7 @@ void SIM_GUI_SetTransMode(int LayerIndex, int TransMode);
 void SIM_GUI_SetChroma(int LayerIndex, unsigned long ChromaMin, unsigned long ChromaMax);
 void SIM_GUI_UseCustomBitmaps(void);
 void SIM_GUI_SetAccellerator(int Accellerator);
+void SIM_GUI_SetMainScreenOffset(int x, int y);
 
 /********************************************************************
 *
@@ -164,7 +144,6 @@ int  SIM_GUI_GetTime(void);
 int  SIM_GUI_GetKey(void);
 int  SIM_GUI_WaitKey(void);
 void SIM_GUI_StoreKey(int);
-
 
 /********************************************************************
 *

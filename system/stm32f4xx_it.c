@@ -47,6 +47,7 @@
 
 extern PCD_HandleTypeDef hpcd_USB_OTG_FS;
 extern SD_HandleTypeDef hsd;
+extern LTDC_HandleTypeDef hltdc;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -142,6 +143,11 @@ void DMA2_Stream3_IRQHandler(void)
 void SDIO_IRQHandler(void)
 {
 	BSP_SD_IRQHandler();
+}
+
+void LTDC_IRQHandler(void)
+{
+	HAL_LTDC_IRQHandler(&hltdc);
 }
 
 /* USER CODE BEGIN 1 */

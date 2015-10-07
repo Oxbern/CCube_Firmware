@@ -17,7 +17,7 @@ void StartGuiTask(void const * argument)
 	GUI_CURSOR_Select(&GUI_CursorArrowM);
 	GUI_CURSOR_Show();  
 
-	WM_SetCreateFlags(WM_CF_MEMDEV);      // Use memory devices on all windows to avoid flicker
+	//WM_SetCreateFlags(WM_CF_MEMDEV);      // Use memory devices on all windows to avoid flicker
 
     while(1)
     {

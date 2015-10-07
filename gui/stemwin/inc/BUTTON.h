@@ -1,16 +1,15 @@
 /*********************************************************************
-*          Portions COPYRIGHT 2013 STMicroelectronics                *
-*          Portions SEGGER Microcontroller GmbH & Co. KG             *
+*                SEGGER Microcontroller GmbH & Co. KG                *
 *        Solutions for real time microcontroller applications        *
 **********************************************************************
 *                                                                    *
-*        (c) 1996 - 2013  SEGGER Microcontroller GmbH & Co. KG       *
+*        (c) 1996 - 2015  SEGGER Microcontroller GmbH & Co. KG       *
 *                                                                    *
 *        Internet: www.segger.com    Support:  support@segger.com    *
 *                                                                    *
 **********************************************************************
 
-** emWin V5.22 - Graphical user interface for embedded applications **
+** emWin V5.28 - Graphical user interface for embedded applications **
 All  Intellectual Property rights  in the Software belongs to  SEGGER.
 emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
@@ -31,25 +30,6 @@ File        : BUTTON.h
 Purpose     : BUTTON public header file (API)
 --------------------END-OF-HEADER-------------------------------------
 */
-
-/**
-  ******************************************************************************
-  * @attention
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
 
 #ifndef BUTTON_H
 #define BUTTON_H
@@ -140,15 +120,15 @@ BUTTON_Handle BUTTON_CreateIndirect(const GUI_WIDGET_CREATE_INFO * pCreateInfo, 
 *
 **********************************************************************
 */
-GUI_COLOR                    BUTTON_GetDefaultBkColor   (unsigned Index);
-const GUI_FONT GUI_UNI_PTR * BUTTON_GetDefaultFont      (void);
-int                          BUTTON_GetDefaultTextAlign (void);
-GUI_COLOR                    BUTTON_GetDefaultTextColor (unsigned Index);
-void                         BUTTON_SetDefaultBkColor   (GUI_COLOR Color, unsigned Index);
-GUI_COLOR                    BUTTON_SetDefaultFocusColor(GUI_COLOR Color);
-void                         BUTTON_SetDefaultFont      (const GUI_FONT GUI_UNI_PTR * pFont);
-void                         BUTTON_SetDefaultTextAlign (int Align);
-void                         BUTTON_SetDefaultTextColor (GUI_COLOR Color, unsigned Index);
+GUI_COLOR        BUTTON_GetDefaultBkColor   (unsigned Index);
+const GUI_FONT * BUTTON_GetDefaultFont      (void);
+int              BUTTON_GetDefaultTextAlign (void);
+GUI_COLOR        BUTTON_GetDefaultTextColor (unsigned Index);
+void             BUTTON_SetDefaultBkColor   (GUI_COLOR Color, unsigned Index);
+GUI_COLOR        BUTTON_SetDefaultFocusColor(GUI_COLOR Color);
+void             BUTTON_SetDefaultFont      (const GUI_FONT * pFont);
+void             BUTTON_SetDefaultTextAlign (int Align);
+void             BUTTON_SetDefaultTextColor (GUI_COLOR Color, unsigned Index);
 
 #define BUTTON_EnableMemdev(hObj)  WM_EnableMemdev    (hObj)
 #define BUTTON_DisableMemdev(hObj) WM_DisableMemdev   (hObj)
@@ -171,38 +151,38 @@ void BUTTON_Callback(WM_MESSAGE *pMsg);
 *
 **********************************************************************
 */
-GUI_COLOR        BUTTON_GetBkColor         (BUTTON_Handle hObj, unsigned int Index);
-const GUI_BITMAP GUI_UNI_PTR * BUTTON_GetBitmap(BUTTON_Handle hObj,unsigned int Index);
-const GUI_FONT   GUI_UNI_PTR * BUTTON_GetFont  (BUTTON_Handle hObj);
-GUI_COLOR        BUTTON_GetFrameColor      (BUTTON_Handle hObj);
-WIDGET         * BUTTON_GetpWidget         (BUTTON_Handle hObj);
-void             BUTTON_GetText            (BUTTON_Handle hObj, char * pBuffer, int MaxLen);
-GUI_COLOR        BUTTON_GetTextColor       (BUTTON_Handle hObj, unsigned int Index);
-int              BUTTON_GetTextAlign       (BUTTON_Handle hObj);
-int              BUTTON_GetUserData        (BUTTON_Handle hObj, void * pDest, int NumBytes);
-unsigned         BUTTON_IsPressed          (BUTTON_Handle hObj);
-void             BUTTON_SetBitmap          (BUTTON_Handle hObj, unsigned int Index, const GUI_BITMAP * pBitmap);
-void             BUTTON_SetBitmapEx        (BUTTON_Handle hObj, unsigned int Index, const GUI_BITMAP * pBitmap, int x, int y);
-void             BUTTON_SetBkColor         (BUTTON_Handle hObj, unsigned int Index, GUI_COLOR Color);
-void             BUTTON_SetBMP             (BUTTON_Handle hObj, unsigned int Index, const void * pBitmap);
-void             BUTTON_SetBMPEx           (BUTTON_Handle hObj, unsigned int Index, const void * pBitmap, int x, int y);
-void             BUTTON_SetFont            (BUTTON_Handle hObj, const GUI_FONT GUI_UNI_PTR * pfont);
-void             BUTTON_SetFrameColor      (BUTTON_Handle hObj, GUI_COLOR Color);
-void             BUTTON_SetState           (BUTTON_Handle hObj, int State);                                    /* Not to be doc. */
-void             BUTTON_SetPressed         (BUTTON_Handle hObj, int State);
-GUI_COLOR        BUTTON_SetFocusColor      (BUTTON_Handle hObj, GUI_COLOR Color);
-void             BUTTON_SetFocussable      (BUTTON_Handle hObj, int State);
-void             BUTTON_SetStreamedBitmap  (BUTTON_Handle hObj, unsigned int Index, const GUI_BITMAP_STREAM * pBitmap);
-void             BUTTON_SetStreamedBitmapEx(BUTTON_Handle hObj, unsigned int Index, const GUI_BITMAP_STREAM * pBitmap, int x, int y);
-int              BUTTON_SetText            (BUTTON_Handle hObj, const char* s);
-void             BUTTON_SetTextAlign       (BUTTON_Handle hObj, int Align);
-void             BUTTON_SetTextColor       (BUTTON_Handle hObj, unsigned int Index, GUI_COLOR Color);
-void             BUTTON_SetTextOffset      (BUTTON_Handle hObj, int xPos, int yPos);
-void             BUTTON_SetSelfDrawEx      (BUTTON_Handle hObj, unsigned int Index, GUI_DRAW_SELF_CB * pDraw, int x, int y); /* Not to be doc. */
-void             BUTTON_SetSelfDraw        (BUTTON_Handle hObj, unsigned int Index, GUI_DRAW_SELF_CB * pDraw);               /* Not to be doc. */
-void             BUTTON_SetReactOnLevel    (void);
-void             BUTTON_SetReactOnTouch    (void);
-int              BUTTON_SetUserData        (BUTTON_Handle hObj, const void * pSrc, int NumBytes);
+GUI_COLOR          BUTTON_GetBkColor         (BUTTON_Handle hObj, unsigned int Index);
+const GUI_BITMAP * BUTTON_GetBitmap(BUTTON_Handle hObj,unsigned int Index);
+const GUI_FONT   * BUTTON_GetFont  (BUTTON_Handle hObj);
+GUI_COLOR          BUTTON_GetFrameColor      (BUTTON_Handle hObj);
+WIDGET           * BUTTON_GetpWidget         (BUTTON_Handle hObj);
+void               BUTTON_GetText            (BUTTON_Handle hObj, char * pBuffer, int MaxLen);
+GUI_COLOR          BUTTON_GetTextColor       (BUTTON_Handle hObj, unsigned int Index);
+int                BUTTON_GetTextAlign       (BUTTON_Handle hObj);
+int                BUTTON_GetUserData        (BUTTON_Handle hObj, void * pDest, int NumBytes);
+unsigned           BUTTON_IsPressed          (BUTTON_Handle hObj);
+void               BUTTON_SetBitmap          (BUTTON_Handle hObj, unsigned int Index, const GUI_BITMAP * pBitmap);
+void               BUTTON_SetBitmapEx        (BUTTON_Handle hObj, unsigned int Index, const GUI_BITMAP * pBitmap, int x, int y);
+void               BUTTON_SetBkColor         (BUTTON_Handle hObj, unsigned int Index, GUI_COLOR Color);
+void               BUTTON_SetBMP             (BUTTON_Handle hObj, unsigned int Index, const void * pBitmap);
+void               BUTTON_SetBMPEx           (BUTTON_Handle hObj, unsigned int Index, const void * pBitmap, int x, int y);
+void               BUTTON_SetFont            (BUTTON_Handle hObj, const GUI_FONT * pfont);
+void               BUTTON_SetFrameColor      (BUTTON_Handle hObj, GUI_COLOR Color);
+void               BUTTON_SetState           (BUTTON_Handle hObj, int State);                                    /* Not to be doc. */
+void               BUTTON_SetPressed         (BUTTON_Handle hObj, int State);
+GUI_COLOR          BUTTON_SetFocusColor      (BUTTON_Handle hObj, GUI_COLOR Color);
+void               BUTTON_SetFocussable      (BUTTON_Handle hObj, int State);
+void               BUTTON_SetStreamedBitmap  (BUTTON_Handle hObj, unsigned int Index, const GUI_BITMAP_STREAM * pBitmap);
+void               BUTTON_SetStreamedBitmapEx(BUTTON_Handle hObj, unsigned int Index, const GUI_BITMAP_STREAM * pBitmap, int x, int y);
+int                BUTTON_SetText            (BUTTON_Handle hObj, const char* s);
+void               BUTTON_SetTextAlign       (BUTTON_Handle hObj, int Align);
+void               BUTTON_SetTextColor       (BUTTON_Handle hObj, unsigned int Index, GUI_COLOR Color);
+void               BUTTON_SetTextOffset      (BUTTON_Handle hObj, int xPos, int yPos);
+void               BUTTON_SetSelfDrawEx      (BUTTON_Handle hObj, unsigned int Index, GUI_DRAW_SELF_CB * pDraw, int x, int y); /* Not to be doc. */
+void               BUTTON_SetSelfDraw        (BUTTON_Handle hObj, unsigned int Index, GUI_DRAW_SELF_CB * pDraw);               /* Not to be doc. */
+void               BUTTON_SetReactOnLevel    (void);
+void               BUTTON_SetReactOnTouch    (void);
+int                BUTTON_SetUserData        (BUTTON_Handle hObj, const void * pSrc, int NumBytes);
 
 /*********************************************************************
 *

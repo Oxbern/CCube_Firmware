@@ -1,16 +1,15 @@
 /*********************************************************************
-*          Portions COPYRIGHT 2013 STMicroelectronics                *
-*          Portions SEGGER Microcontroller GmbH & Co. KG             *
+*                SEGGER Microcontroller GmbH & Co. KG                *
 *        Solutions for real time microcontroller applications        *
 **********************************************************************
 *                                                                    *
-*        (c) 1996 - 2013  SEGGER Microcontroller GmbH & Co. KG       *
+*        (c) 1996 - 2015  SEGGER Microcontroller GmbH & Co. KG       *
 *                                                                    *
 *        Internet: www.segger.com    Support:  support@segger.com    *
 *                                                                    *
 **********************************************************************
 
-** emWin V5.22 - Graphical user interface for embedded applications **
+** emWin V5.28 - Graphical user interface for embedded applications **
 All  Intellectual Property rights  in the Software belongs to  SEGGER.
 emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
@@ -31,25 +30,6 @@ File        : LISTBOX.h
 Purpose     : LISTBOX widget include
 --------------------END-OF-HEADER-------------------------------------
 */
-
-/**
-  ******************************************************************************
-  * @attention
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
 
 #ifndef LISTBOX_H
 #define LISTBOX_H
@@ -104,9 +84,11 @@ typedef WM_HMEM LISTBOX_Handle;
 #define LISTBOX_CF_AUTOSCROLLBAR_H   (1<<0)
 #define LISTBOX_CF_AUTOSCROLLBAR_V   (1<<1)
 #define LISTBOX_CF_MULTISEL          (1<<2)
+#define LISTBOX_CF_WRAP              (1<<3)
 #define LISTBOX_SF_AUTOSCROLLBAR_H   LISTBOX_CF_AUTOSCROLLBAR_H
 #define LISTBOX_SF_AUTOSCROLLBAR_V   LISTBOX_CF_AUTOSCROLLBAR_V
 #define LISTBOX_SF_MULTISEL          LISTBOX_CF_MULTISEL
+#define LISTBOX_SF_WRAP              LISTBOX_CF_WRAP
 
 /*********************************************************************
 *
@@ -155,10 +137,11 @@ void         LISTBOX_AddString       (LISTBOX_Handle hObj, const char * s);
 void         LISTBOX_AddStringH      (LISTBOX_Handle hObj, WM_HMEM hString); /* Not to be documented!!! */
 void         LISTBOX_DecSel          (LISTBOX_Handle hObj);
 void         LISTBOX_DeleteItem      (LISTBOX_Handle hObj, unsigned int Index);
+void         LISTBOX_EnableWrapMode  (LISTBOX_Handle hObj, int OnOff);
 unsigned     LISTBOX_GetItemSpacing  (LISTBOX_Handle hObj);
 unsigned     LISTBOX_GetNumItems     (LISTBOX_Handle hObj);
 int          LISTBOX_GetSel          (LISTBOX_Handle hObj);
-const GUI_FONT GUI_UNI_PTR * LISTBOX_GetFont    (LISTBOX_Handle hObj);
+const GUI_FONT * LISTBOX_GetFont     (LISTBOX_Handle hObj);
 int          LISTBOX_GetItemDisabled (LISTBOX_Handle hObj, unsigned Index);
 int          LISTBOX_GetItemSel      (LISTBOX_Handle hObj, unsigned Index);
 void         LISTBOX_GetItemText     (LISTBOX_Handle hObj, unsigned Index, char * pBuffer, int MaxSize);
@@ -173,7 +156,7 @@ int          LISTBOX_OwnerDraw       (const WIDGET_ITEM_DRAW_INFO * pDrawItemInf
 void         LISTBOX_SetAutoScrollH  (LISTBOX_Handle hObj, int OnOff);
 void         LISTBOX_SetAutoScrollV  (LISTBOX_Handle hObj, int OnOff);
 void         LISTBOX_SetBkColor      (LISTBOX_Handle hObj, unsigned int Index, GUI_COLOR color);
-void         LISTBOX_SetFont         (LISTBOX_Handle hObj, const GUI_FONT GUI_UNI_PTR * pFont);
+void         LISTBOX_SetFont         (LISTBOX_Handle hObj, const GUI_FONT * pFont);
 void         LISTBOX_SetItemDisabled (LISTBOX_Handle hObj, unsigned Index, int OnOff);
 void         LISTBOX_SetItemSel      (LISTBOX_Handle hObj, unsigned Index, int OnOff);
 void         LISTBOX_SetItemSpacing  (LISTBOX_Handle hObj, unsigned Value);
@@ -198,16 +181,16 @@ int          LISTBOX_UpdateScrollers (LISTBOX_Handle hObj);
 **********************************************************************
 */
 
-const GUI_FONT GUI_UNI_PTR* LISTBOX_GetDefaultFont(void);
-int         LISTBOX_GetDefaultScrollStepH (void);
-GUI_COLOR   LISTBOX_GetDefaultBkColor     (unsigned Index);
-int         LISTBOX_GetDefaultTextAlign   (void);
-GUI_COLOR   LISTBOX_GetDefaultTextColor   (unsigned Index);
-void        LISTBOX_SetDefaultFont        (const GUI_FONT GUI_UNI_PTR * pFont);
-void        LISTBOX_SetDefaultScrollStepH (int Value);
-void        LISTBOX_SetDefaultBkColor     (unsigned Index, GUI_COLOR Color);
-void        LISTBOX_SetDefaultTextAlign   (int Align);
-void        LISTBOX_SetDefaultTextColor   (unsigned Index, GUI_COLOR Color);
+const GUI_FONT * LISTBOX_GetDefaultFont(void);
+int              LISTBOX_GetDefaultScrollStepH (void);
+GUI_COLOR        LISTBOX_GetDefaultBkColor     (unsigned Index);
+int              LISTBOX_GetDefaultTextAlign   (void);
+GUI_COLOR        LISTBOX_GetDefaultTextColor   (unsigned Index);
+void             LISTBOX_SetDefaultFont        (const GUI_FONT * pFont);
+void             LISTBOX_SetDefaultScrollStepH (int Value);
+void             LISTBOX_SetDefaultBkColor     (unsigned Index, GUI_COLOR Color);
+void             LISTBOX_SetDefaultTextAlign   (int Align);
+void             LISTBOX_SetDefaultTextColor   (unsigned Index, GUI_COLOR Color);
 
 /*********************************************************************
 *

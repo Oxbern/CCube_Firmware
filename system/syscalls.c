@@ -15,7 +15,7 @@ void _exit(int n) {
 label: goto label;       /* plz don't kill me */
 }
 
-#define HEAP_START 0xC0400000
+#define HEAP_START 0xC0200000
 
 static caddr_t _heap_start = (caddr_t)HEAP_START;
 static caddr_t _heap_end = (caddr_t)(HEAP_START+0x500000); /* 5 Mo */

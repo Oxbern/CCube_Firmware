@@ -1,16 +1,15 @@
 /*********************************************************************
-*          Portions COPYRIGHT 2013 STMicroelectronics                *
-*          Portions SEGGER Microcontroller GmbH & Co. KG             *
+*                SEGGER Microcontroller GmbH & Co. KG                *
 *        Solutions for real time microcontroller applications        *
 **********************************************************************
 *                                                                    *
-*        (c) 1996 - 2013  SEGGER Microcontroller GmbH & Co. KG       *
+*        (c) 1996 - 2015  SEGGER Microcontroller GmbH & Co. KG       *
 *                                                                    *
 *        Internet: www.segger.com    Support:  support@segger.com    *
 *                                                                    *
 **********************************************************************
 
-** emWin V5.22 - Graphical user interface for embedded applications **
+** emWin V5.28 - Graphical user interface for embedded applications **
 All  Intellectual Property rights  in the Software belongs to  SEGGER.
 emWin is protected by  international copyright laws.  Knowledge of the
 source code may not be used to write a similar product.  This file may
@@ -31,25 +30,6 @@ File        : TEXT.h
 Purpose     : TEXT include
 --------------------END-OF-HEADER-------------------------------------
 */
-
-/**
-  ******************************************************************************
-  * @attention
-  *
-  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
-  * You may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at:
-  *
-  *        http://www.st.com/software_license_agreement_liberty_v2
-  *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-  *
-  ******************************************************************************
-  */
 
 #ifndef TEXT_H
 #define TEXT_H
@@ -141,7 +121,7 @@ int  TEXT_GetNumLines (TEXT_Handle hObj);
 int  TEXT_GetText     (TEXT_Handle hObj, char * pDest, U32 BufferSize);
 int  TEXT_GetUserData (TEXT_Handle hObj, void * pDest, int NumBytes);
 void TEXT_SetBkColor  (TEXT_Handle hObj, GUI_COLOR Color); /* Obsolete. Left in GUI for compatibility to older versions */
-void TEXT_SetFont     (TEXT_Handle hObj, const GUI_FONT GUI_UNI_PTR * pFont);
+void TEXT_SetFont     (TEXT_Handle hObj, const GUI_FONT * pFont);
 int  TEXT_SetText     (TEXT_Handle hObj, const char * s);
 void TEXT_SetTextAlign(TEXT_Handle hObj, int Align);
 void TEXT_SetTextColor(TEXT_Handle hObj, GUI_COLOR Color);
@@ -155,10 +135,10 @@ void TEXT_SetWrapMode (TEXT_Handle hObj, GUI_WRAPMODE WrapMode);
 **********************************************************************
 */
 
-void                         TEXT_SetDefaultFont     (const GUI_FONT GUI_UNI_PTR * pFont);
-const GUI_FONT GUI_UNI_PTR * TEXT_GetDefaultFont     (void);
-void                         TEXT_SetDefaultTextColor(GUI_COLOR Color);
-GUI_WRAPMODE                 TEXT_SetDefaultWrapMode (GUI_WRAPMODE WrapMode);
+void             TEXT_SetDefaultFont     (const GUI_FONT * pFont);
+const GUI_FONT * TEXT_GetDefaultFont     (void);
+void             TEXT_SetDefaultTextColor(GUI_COLOR Color);
+GUI_WRAPMODE     TEXT_SetDefaultWrapMode (GUI_WRAPMODE WrapMode);
 
 #if defined(__cplusplus)
   }

@@ -116,15 +116,18 @@ int main(void)
 	USB_DEVICE_Init();
 	
 	CRC_Init();
-	DMA2D_Init();
-	LTDC_Init();
-
+	//DMA2D_Init();
+	//LTDC_Init();
 
 	GUI_Init();
-
-	GUI_SetColor(GUI_WHITE);
-	GUI_SetFont(GUI_FONT_24_ASCII);
+	
+	WM_MULTIBUF_Enable(1);
+	GUI_SetLayerVisEx(1, 0);
 	GUI_SelectLayer(0);
+
+	GUI_SetBkColor(GUI_WHITE);
+	GUI_SetDefaultFont(GUI_FONT_24_ASCII);
+	GUI_Clear();
 
 	//WM_MULTIBUF_Enable(1);
 
