@@ -489,7 +489,7 @@ static void LCD_LL_Init(void)
   HAL_LTDC_ProgramLineEvent(&hltdc, 0);
   
   /* Enable dithering */
-  HAL_LTDC_EnableDither(&hltdc);
+  //HAL_LTDC_EnableDither(&hltdc);
   
   /* LCD Backlight */
   HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_SET);

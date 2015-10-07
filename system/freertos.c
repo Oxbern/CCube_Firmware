@@ -9,6 +9,7 @@
 #include "TREEVIEW.h"
 #include "DIALOG.h"
 #include "MULTIPAGE.h"
+#include "TEXT.h"
 #include "WM.h"
 
 #include "usbd_cdc.h"
@@ -215,10 +216,51 @@ FRESULT scan_files (
 }
 
 database_t * db = NULL;
+int current_motif_index;
+char current_motif_title[128];
+char * current_motif_desc;
+
+void _cbrundb(WM_MESSAGE * pMsg)
+{
+	int NCode;
+	int Id;
+	
+	switch(pMsg->MsgId)
+	{
+		case WM_NOTIFY_PARENT:
+			NCode = pMsg->Data.v;
+			Id = WM_GetId(pMsg->hWinSrc);
+			if		(Id == GUI_ID_BUTTON0) // Prev
+			{
+				switch (NCode)
+				{
+					case WM_NOTIFICATION_RELEASED:
+						{
+						}
+						break;
+				}
+				
+			}
+			else if (Id == GUI_ID_BUTTON1) // Next
+			{
+					case WM_NOTIFICATION_RELEASED:
+						{
+						}
+						break;
+			}
+			break;
+		case WM_PAINT:
+			GUI_SetColor(GUI_WHITE);
+			GUI_Clear();
+		default:
+			WM_DefaultProc(pMsg);
+	}
+	
+}
 
 void run_db(void)
 {
-	
+/*	
 	printf("Database name : %s\n", db->name);
 	printf("Database nb children : %i\n", (int)db->nb_motifs);
 	for (uint32_t i = 0; i < db->nb_motifs; i++)
@@ -229,6 +271,60 @@ void run_db(void)
 		printf("        desc : %s\n", m->desc);
 		printf("        img  : %s\n", m->image);
 	}
+*/
+	char error_404[] = "No Motifs Found in Database!";
+
+
+	if (db->motifs == NULL)
+	{
+		strcpy(current_motif_title, error_404);
+	} else {
+		current_motif_index = 1;
+		sprintf(current_motif_title, "%i/%i -- %s", (int)current_motif_index, (int)db->nb_motifs, db->motifs->name);
+		current_motif_desc = db->motifs->desc;
+	}
+
+	WM_HWIN		db_nav_win = WINDOW_CreateEx(	0, 0,
+												800, 480,
+												WM_HBKWIN, WM_CF_SHOW,
+												0, GUI_ID_USER+0,
+												_cbrundb);
+
+	WINDOW_SetBkColor(db_nav_win, GUI_WHITE);
+
+	TEXT_Handle motif_name_widget = TEXT_CreateEx(	0, 0,
+													800, 100,
+													db_nav_win, WM_CF_SHOW,
+													TEXT_CF_HCENTER | TEXT_CF_VCENTER, GUI_ID_TEXT0,
+													(const char *)current_motif_title);
+
+	
+	MULTIEDIT_HANDLE motif_desc_widget = MULTIEDIT_CreateEx(	100, 100,
+																600, 380,
+																db_nav_win, WM_CF_SHOW,
+																MULTIEDIT_CF_AUTOSCROLLBAR_V, GUI_ID_MULTIEDIT1,
+																5000,
+																(const char *) current_motif_desc
+															);
+
+	BUTTON_Handle bt_prev_widget = BUTTON_CreateEx(	0, 100,
+													100, 380,
+													db_nav_win, WM_CF_SHOW,
+													0,  GUI_ID_BUTTON0);
+
+	BUTTON_SetText(bt_prev_widget, "prev");
+
+	BUTTON_Handle bt_next_widget = BUTTON_CreateEx(	700, 100,
+													100, 380,
+													db_nav_win, WM_CF_SHOW,
+													0,  GUI_ID_BUTTON1);
+	BUTTON_SetText(bt_next_widget, "next");
+	
+	TEXT_SetFont(motif_name_widget, GUI_FONT_24_ASCII);
+	BUTTON_SetFont(bt_prev_widget, GUI_FONT_24_ASCII);
+	BUTTON_SetFont(bt_next_widget, GUI_FONT_24_ASCII);
+	MULTIEDIT_SetFont(motif_desc_widget, GUI_FONT_24_ASCII);
+
 }
 
 
@@ -290,6 +386,15 @@ void _cbHBKWIN(WM_MESSAGE * pMsg)
 						break;
 					case WM_NOTIFICATION_VALUE_CHANGED:
 						//printf("WM_NOTIFICATION_VALUE_CHANGED\n");
+						break;
+				}
+			}
+			else if (Id == GUI_ID_USER+0)
+			{
+				switch (NCode)
+				{
+					case WM_NOTIFICATION_CLICKED:
+						WM_SetFocus(pMsg->hWinSrc);
 						break;
 				}
 			}
