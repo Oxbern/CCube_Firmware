@@ -509,7 +509,7 @@ void HAL_LTDC_MspInit(LTDC_HandleTypeDef* hltdc)
 	HAL_NVIC_SetPriority(LTDC_IRQn, 0xE, 0);
 
 	// Enable LTDC Interrupt
-	HAL_NVIC_EnableIRQ(LTDC_IRQn);
+	//HAL_NVIC_EnableIRQ(LTDC_IRQn);
 
 	// Turn LTDC ON
 	HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_SET);

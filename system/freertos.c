@@ -109,6 +109,11 @@ bool correct_extention(char * filename)
 }
 
 
+typedef struct myfd {
+	int type;
+	char * path;
+} myfd_t;
+
 FRESULT scan_files (
 	char* path,        /* Start node to be scanned (also used as work area) */
 	TREEVIEW_Handle *hpath
@@ -134,6 +139,14 @@ FRESULT scan_files (
 															0,
 															(const char *)path
 														);
+		myfd_t * this_fd = malloc(sizeof(struct myfd));
+		this_fd->type = 0;
+		char * file_path = malloc(strlen(path)+1);
+		sprintf(file_path, "%s", path);
+		//printf("%s\n", file_path);
+		this_fd->path = file_path;
+		TREEVIEW_ITEM_SetUserData(node, (uint32_t)this_fd);
+
 		int nb_child = 0;
 		TREEVIEW_ITEM_Handle last_item = NULL;
         i = strlen(path);
@@ -175,7 +188,7 @@ FRESULT scan_files (
                 if (res != FR_OK) break;
 				nb_child++;
             } else {                                       /* It is a file. */
-				//if (correct_extention(fn))
+				if (correct_extention(fn))
 				{
 					last_item = TREEVIEW_InsertItem(	*hpath,
 														TREEVIEW_ITEM_TYPE_LEAF,
@@ -184,7 +197,13 @@ FRESULT scan_files (
 														(const char *) fn
 													);
 					nb_child++;
-					//printf("%s/%s\n", path, fn);
+					myfd_t * this_fd = malloc(sizeof(struct myfd));
+					this_fd->type = 1;
+					char * file_path = malloc(strlen(path)+strlen(fn)+2);
+					sprintf(file_path, "%s/%s", path, fn);
+					//printf("%s\n", file_path);
+					this_fd->path = file_path;
+					TREEVIEW_ITEM_SetUserData(last_item, (uint32_t)this_fd);
 				}
             }
         }
@@ -193,6 +212,7 @@ FRESULT scan_files (
 
     return res;
 }
+
 
 void _cbHBKWIN(WM_MESSAGE * pMsg)
 {
@@ -218,6 +238,16 @@ void _cbHBKWIN(WM_MESSAGE * pMsg)
 						Sel = TREEVIEW_GetSel(pMsg->hWinSrc);
 						TREEVIEW_ITEM_GetText(Sel, (U8*)pBuffer, 128);
 						printf("Selecting \"%s\"\n", pBuffer);
+						
+						myfd_t * selfd = (myfd_t *) TREEVIEW_ITEM_GetUserData(Sel);
+						printf("Path to selection : %s\n", selfd->path);
+						if (selfd->type == 0)
+						{
+							printf("is a directory\n");
+						} else {
+							printf("is a file\n");
+						}
+						
 						break;
 					case WM_NOTIFICATION_SEL_CHANGED:
 						printf("Selection changed\n");
@@ -237,6 +267,11 @@ void _cbHBKWIN(WM_MESSAGE * pMsg)
 						break;
 				}
 			}
+			break;
+		
+		case WM_PAINT:
+			GUI_SetColor(GUI_WHITE);
+			GUI_Clear();
 			break;
 
 		default:

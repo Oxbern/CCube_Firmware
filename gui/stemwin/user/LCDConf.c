@@ -122,7 +122,7 @@ Purpose     : Display controller configuration (single layer)
 **********************************************************************
 */
 #define LCD_LAYER0_FRAME_BUFFER ((uint32_t)0xC0000000)
-#define LCD_LAYER1_FRAME_BUFFER ((uint32_t)0xC0200000)
+#define LCD_LAYER1_FRAME_BUFFER ((uint32_t)0xC0177000)
 
 
 LTDC_HandleTypeDef hltdc;
@@ -304,13 +304,13 @@ void LCD_X_Config(void) {
     layer_prop[i].BytesPerPixel = LCD_GetBitsPerPixelEx(i) >> 3;
 
     /* Set LCD_LL functions for several operations */
-    LCD_SetDevFunc(i, LCD_DEVFUNC_COPYBUFFER, (void(*)(void))LCD_LL_CopyBuffer);
-    LCD_SetDevFunc(i, LCD_DEVFUNC_COPYRECT,   (void(*)(void))LCD_LL_CopyRect);
-    LCD_SetDevFunc(i, LCD_DEVFUNC_FILLRECT, (void(*)(void))LCD_LL_FillRect);
+    //LCD_SetDevFunc(i, LCD_DEVFUNC_COPYBUFFER, (void(*)(void))LCD_LL_CopyBuffer);
+    //LCD_SetDevFunc(i, LCD_DEVFUNC_COPYRECT,   (void(*)(void))LCD_LL_CopyRect);
+    //LCD_SetDevFunc(i, LCD_DEVFUNC_FILLRECT, (void(*)(void))LCD_LL_FillRect);
 
     /* Set up drawing routine for 32bpp bitmap using DMA2D */
     if (LCD_LL_GetPixelformat(i) == LTDC_PIXEL_FORMAT_ARGB8888) {
-     LCD_SetDevFunc(i, LCD_DEVFUNC_DRAWBMP_32BPP, (void(*)(void))LCD_LL_DrawBitmap32bpp);     /* Set up drawing routine for 32bpp bitmap using DMA2D. Makes only sense with ARGB8888 */
+     //LCD_SetDevFunc(i, LCD_DEVFUNC_DRAWBMP_32BPP, (void(*)(void))LCD_LL_DrawBitmap32bpp);     /* Set up drawing routine for 32bpp bitmap using DMA2D. Makes only sense with ARGB8888 */
     }    
   }
 }

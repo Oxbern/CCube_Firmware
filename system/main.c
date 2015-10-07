@@ -125,9 +125,10 @@ int main(void)
 	GUI_SetLayerVisEx(1, 0);
 	GUI_SelectLayer(0);
 
-	GUI_SetBkColor(GUI_WHITE);
+	GUI_SetColor(GUI_WHITE);
 	GUI_SetDefaultFont(GUI_FONT_24_ASCII);
 	GUI_Clear();
+
 
 	//WM_MULTIBUF_Enable(1);
 
