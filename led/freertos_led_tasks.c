@@ -54,29 +54,31 @@ extern point_t * points2blink;
 
 void StartBlinkTask(void const * argument)
 {
-	
+
+	/*
+	for(int z = 0; z < 9; z++)
+	{
+		for(int y = 0; y < 9; y++)
+		{
+			for(int x = 0; x < 9; x++)
+			{
+				led_toggle(x,y,z);
+				//osDelay(200);
+				//ed_unset(x,y,0);
+			}
+		}
+	}
+	*/
 	
 	while(1)
 	{
-			/*
-			for(int y = 0; y < 9; y++)
-			{
-				for(int x = 0; x < 9; x++)
-				{
-					led_toggle(x,y,0);
-					osDelay(300);
-					led_unset(x,y,0);
-				}
-			}
-			*/
-	
 		point_t * p = points2blink;
 		while (p != NULL)
 		{
 			led_toggle(p->x, p->y, p->z);
 			p = p->next;
 		}
-		osDelay(300);
+		osDelay(500);
 	}
 }
 
@@ -89,8 +91,12 @@ static inline int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out
 	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+//#define YES_PWM
+
 void StartPwmTask(void const * argument)
 {
+
+#ifdef YES_PWM
 	
 	if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3) != HAL_OK)
 	{
@@ -144,9 +150,10 @@ void StartPwmTask(void const * argument)
 		// TODO implémentation d'un seuil variable pour la vérification
 		osDelay(20);
 	}
+
+#else 	
 	
-	
-	/*	
+		
 	HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2);
 	GPIO_InitTypeDef GPIO_InitStruct;
 	GPIO_InitStruct.Pin = GPIO_PIN_2;
@@ -159,6 +166,7 @@ void StartPwmTask(void const * argument)
 	
 
 	while(1){osDelay(5);}
-	*/
+	
+#endif
 
 }
