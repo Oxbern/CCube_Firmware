@@ -9,9 +9,25 @@ typedef struct point {
 	struct point* next;
 } point_t;
 
+enum option_type {
+	BLINK,
+	DUPLICATE
+};
+
+typedef struct blink_params {
+	uint32_t period;
+	uint8_t x, y, z;
+} blink_params_t;
+
+typedef struct duplicate_params {
+	uint8_t ix, iy, iz;
+	uint8_t jx, jy, jz;
+	uint8_t kx, ky, kz;
+} duplicate_params_t;
+
 typedef struct option {
-	char* name;
-	uint32_t value;
+	enum option_type type;
+	void * params;
 	struct option* next;
 } option_t;
 
@@ -42,7 +58,9 @@ point_t* new_point_queue(uint8_t x, uint8_t y, uint8_t z, point_t** head);
 
 point_t* free_point(point_t* point);
 
-option_t* new_option_queue(char* name, uint32_t val, option_t** head);
+option_t* new_blink_option_queue(uint32_t period, uint8_t x, uint8_t y, uint8_t z, option_t** head);
+
+option_t* new_duplicate_option_queue(uint8_t ix, uint8_t iy, uint8_t iz, uint8_t jx, uint8_t jy, uint8_t jz, uint8_t kx, uint8_t ky, uint8_t kz, option_t** head);
 
 option_t* free_option(option_t* option);
 

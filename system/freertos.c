@@ -1,6 +1,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "cmsis_os.h"
+#include "queue.h"
 
 #include "stm32f4xx_hal.h"
 
@@ -29,11 +30,14 @@
 #include "led.h"
 #include "console.h"
 #include "database_utils.h"
+#include "database_structures.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+
+#define MAX_POINTS 9*9*9
 
 /*
  * Firmware Tasks
@@ -57,7 +61,8 @@ extern void StartFsTask(void const * argument);
 osThreadId guiTaskHandle;
 extern void StartGuiTask(void const * argument);
 
-
+osThreadId blinkTaskHandle;
+extern void StartBlinkTask(void const * argument);
 
 /**
  * FreeRTOS Initialisation function
@@ -88,6 +93,9 @@ void StartInitTask(void const * argument)
 
 	osThreadDef(guiTask, StartGuiTask, osPriorityNormal, 0, 8192);
 	guiTaskHandle = osThreadCreate(osThread(guiTask), NULL);
+
+	osThreadDef(blinkTask, StartBlinkTask, osPriorityNormal, 0, 8192);
+	blinkTaskHandle = osThreadCreate(osThread(blinkTask), NULL);
 
 	vTaskDelete(initTaskHandle);
 }
@@ -221,6 +229,57 @@ char current_motif_title[256];
 char * current_motif_desc;
 TEXT_Handle motif_name_widget;
 MULTIEDIT_HANDLE motif_desc_widget;
+point_t * points2blink = NULL;
+
+void clear_points2blink(void)
+{
+	points2blink = NULL;
+}
+
+void handle_option(option_t * o)
+{
+	switch (o->type)
+	{
+		case BLINK:
+			new_point_queue(
+						((blink_params_t*)o->params)->x,
+						((blink_params_t*)o->params)->y,
+						((blink_params_t*)o->params)->z,
+						&points2blink
+						);
+			break;
+		case DUPLICATE:
+			break;
+	}
+}
+
+void update_motif(void)
+{
+	motif_t * m = db->motifs;
+	for (uint32_t i = 1; i < current_motif_index; i++)
+		m = m->next;
+	sprintf(current_motif_title, "%i/%i -- %s", (int)current_motif_index, (int)db->nb_motifs, m->name);
+	current_motif_desc = m->desc;
+	MULTIEDIT_SetText(motif_desc_widget, current_motif_desc);
+	TEXT_SetText(motif_name_widget, current_motif_title);
+
+	led_clear();
+	point_t * p = m->points;
+	while (p != NULL)
+	{	
+		led_set(p->x, p->y, p->z);
+		p = p->next;
+	}
+
+	clear_points2blink();
+	
+	option_t * o = m->options;
+	while (o != NULL)
+	{
+		handle_option(o);
+		o = o->next;
+	}
+}
 
 void _cbrundb(WM_MESSAGE * pMsg)
 {
@@ -241,13 +300,7 @@ void _cbrundb(WM_MESSAGE * pMsg)
 							if (current_motif_index > 1)
 							{
 								current_motif_index--;
-								motif_t * m = db->motifs;
-								for (uint32_t i = 1; i < current_motif_index; i++)
-									m = m->next;
-								sprintf(current_motif_title, "%i/%i -- %s", (int)current_motif_index, (int)db->nb_motifs, m->name);
-								current_motif_desc = m->desc;
-								MULTIEDIT_SetText(motif_desc_widget, current_motif_desc);
-								TEXT_SetText(motif_name_widget, current_motif_title);
+								update_motif();
 							}
 						}
 						break;
@@ -263,13 +316,7 @@ void _cbrundb(WM_MESSAGE * pMsg)
 							if (current_motif_index < db->nb_motifs)
 							{
 								current_motif_index++;
-								motif_t * m = db->motifs;
-								for (uint32_t i = 1; i < current_motif_index; i++)
-									m = m->next;
-								sprintf(current_motif_title, "%i/%i -- %s", (int)current_motif_index, (int)db->nb_motifs, m->name);
-								current_motif_desc = m->desc;
-								MULTIEDIT_SetText(motif_desc_widget, current_motif_desc);
-								TEXT_SetText(motif_name_widget, current_motif_title);
+								update_motif();
 							}
 						}
 						break;
@@ -307,8 +354,9 @@ void run_db(void)
 		strcpy(current_motif_title, error_404);
 	} else {
 		current_motif_index = 1;
-		sprintf(current_motif_title, "%i/%i -- %s", (int)current_motif_index, (int)db->nb_motifs, db->motifs->name);
-		current_motif_desc = db->motifs->desc;
+		//sprintf(current_motif_title, "%i/%i -- %s", (int)current_motif_index, (int)db->nb_motifs, db->motifs->name);
+		//current_motif_desc = db->motifs->desc;
+		update_motif();
 	}
 
 	WM_HWIN		db_nav_win = WINDOW_CreateEx(	0, 0,

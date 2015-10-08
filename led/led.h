@@ -34,6 +34,11 @@ bool led_get(uint8_t x, uint8_t y, uint8_t z);
 /**
  * Send data to sink drivers
  */
-bool led_update();
+bool led_update(int i);
+
+/**
+ * Set all LEDs to off
+ */
+void led_clear(void);
 
 #endif

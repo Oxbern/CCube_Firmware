@@ -31,12 +31,44 @@ point_t* free_point(point_t* point)
 	return next;
 }
 
-option_t* new_option_queue(char* name, uint32_t val, option_t** head)
+option_t* new_duplicate_option_queue(uint8_t ix, uint8_t iy, uint8_t iz, uint8_t jx, uint8_t jy, uint8_t jz, uint8_t kx, uint8_t ky, uint8_t kz, option_t** head)
 {
 	option_t* o = malloc(sizeof(option_t));
-	o->name = malloc(strlen(name));
-	o->name = strcpy(o->name, name);
-	o->value = val;
+	o->type = DUPLICATE;
+	o->params = malloc(sizeof(duplicate_params_t));
+	((duplicate_params_t*)o->params)->ix = ix;
+	((duplicate_params_t*)o->params)->iy = iy;
+	((duplicate_params_t*)o->params)->iz = iz;
+	((duplicate_params_t*)o->params)->jx = jx;
+	((duplicate_params_t*)o->params)->jy = jy;
+	((duplicate_params_t*)o->params)->jz = jz;
+	((duplicate_params_t*)o->params)->kx = kx;
+	((duplicate_params_t*)o->params)->ky = ky;
+	((duplicate_params_t*)o->params)->kz = kz;
+
+	o->next = NULL;
+	if (*head == NULL)
+	{
+		*head = o;
+		return o;
+	}
+	option_t* current = *head;
+	while(current->next != NULL)
+		current = current->next;
+	current->next = o;
+	return o;
+}
+
+option_t* new_blink_option_queue(uint32_t period, uint8_t x, uint8_t y, uint8_t z, option_t** head)
+{
+	option_t* o = malloc(sizeof(option_t));
+	o->type = BLINK;
+	o->params = malloc(sizeof(blink_params_t));
+	((blink_params_t*)o->params)->period = period;
+	((blink_params_t*)o->params)->x = x;
+	((blink_params_t*)o->params)->y = y;
+	((blink_params_t*)o->params)->z = z;
+
 	o->next = NULL;
 	if (*head == NULL)
 	{
@@ -53,7 +85,7 @@ option_t* new_option_queue(char* name, uint32_t val, option_t** head)
 option_t* free_option(option_t* option)
 {
 	option_t* next = option->next;
-	free(option->name);
+	free(option->params);
 	free(option);
 	return next;
 }

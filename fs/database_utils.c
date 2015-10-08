@@ -101,34 +101,43 @@ uint32_t parse_points(json_value * points_array, point_t** points)
 
 	return 0;
 }
-/*
-uint32_t parse_options(char* json, jsmntok_t* tok, uint32_t index, option_t** options)
+
+uint32_t parse_options(json_value * options_array, option_t** options)
 {
-	uint32_t nb_options = tok[index].size;
+	uint32_t nb_options = options_array->u.array.length;
 	*options = NULL;
 
 	for (int i=0; i<nb_options; i++)
 	{
-		index++;
-		char* option_name = malloc(sizeof(char)*(tok[index].end-tok[index].start+1));
-		memcpy(option_name,json+tok[index].start,tok[index].end-tok[index].start+1);
-		option_name[tok[index].end-tok[index].start] = '\0';
-		
-		index++;
-		char* option_value = malloc(sizeof(char)*(tok[index].end-tok[index].start+1));
-		memcpy(option_value,json+tok[index].start,tok[index].end-tok[index].start+1);
-		option_value[tok[index].end-tok[index].start] = '\0';
-		uint32_t value = atoi(option_value);
+		json_value * option = options_array->u.array.values[i];
 
-		new_option_queue(option_name,value,options);
-		
-		free(option_value);
+		json_value * this_type = json_obj_get(option, "option");
+		if (!strcmp(this_type->u.string.ptr, "blink"))
+		{
+			json_value * this_period = json_obj_get(option, "period");
+			json_value * this_point = json_obj_get(option, "point");
+			new_blink_option_queue(	this_period->u.integer,
+									this_point->u.array.values[0]->u.integer,
+									this_point->u.array.values[1]->u.integer,
+									this_point->u.array.values[2]->u.integer,
+									options);
+		} else
+		if (!strcmp(this_type->u.string.ptr, "duplicate"))
+		{
+			json_value * this_i = json_obj_get(option, "i");
+			json_value * this_j = json_obj_get(option, "j");
+			json_value * this_k = json_obj_get(option, "k");
+			new_duplicate_option_queue(
+									this_i->u.array.values[0]->u.integer,this_i->u.array.values[1]->u.integer,this_i->u.array.values[2]->u.integer,
+									this_j->u.array.values[0]->u.integer,this_j->u.array.values[1]->u.integer,this_j->u.array.values[2]->u.integer,
+									this_k->u.array.values[0]->u.integer,this_k->u.array.values[1]->u.integer,this_k->u.array.values[2]->u.integer,
+									options);
+		}
 	}
 	
-	index++;
-	return index;
+	return 0;
 }
-*/
+
 
 uint32_t parse_motifs(json_value * motifs_array, motif_t** motifs)
 {
@@ -156,12 +165,11 @@ uint32_t parse_motifs(json_value * motifs_array, motif_t** motifs)
 		json_value * this_points = json_obj_get(motif, "points");
 		parse_points(this_points, &points);
 
-		/*
 		option_t* options = NULL;
-		index = parse_options(json, tok, index, &options);
-		*/
+		json_value * this_options = json_obj_get(motif, "options");
+		parse_options(this_options, &options);
 
-		new_motif_queue(motif_name, motif_desc, motif_image, points, NULL, motifs);
+		new_motif_queue(motif_name, motif_desc, motif_image, points, options, motifs);
 	}
 
 	return 0;

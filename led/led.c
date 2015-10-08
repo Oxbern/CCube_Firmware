@@ -185,3 +185,17 @@ bool led_update(int i)
 
 	return (status==HAL_OK);
 }
+
+void led_clear(void)
+{
+	for (uint8_t z = 0; z < CUBE_WIDTH; z++)
+	{
+		for (uint8_t y = 0; y < CUBE_WIDTH; y++)
+		{
+			for (uint8_t x = 0; x < CUBE_WIDTH; x++)
+			{
+				led_unset(x,y,z);
+			}
+		}
+	}
+}

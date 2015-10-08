@@ -4,6 +4,7 @@
 #include "tim.h"
 #include "adc.h"
 #include "led.h"
+#include "database_structures.h"
 
 #include <stdio.h>
 
@@ -22,25 +23,60 @@ void StartLedTask(void const * argument)
 	led_set(1,1,7);
 	*/
 
+	/*
 	led_update(9);
 
 	osDelay(500);
 
-	led_set(0,0,0);
-	
-	led_update(0);	
+	led_set(0,0,8);
+	*/
+	//led_update(0);	
+		
+
 
     while(1)
     {
-		/*
 		if (!led_update(i))
 		{
 			printf("Error Trying to update\n");
 		}
 		i = (i+1)%9;
-		*/
+		
 		osDelay(1);
     }
+}
+
+/*
+ * LED blingking handling
+ */
+
+extern point_t * points2blink;
+
+void StartBlinkTask(void const * argument)
+{
+	
+	
+	while(1)
+	{
+	
+			for(int y = 0; y < 9; y++)
+			{
+				for(int x = 0; x < 9; x++)
+				{
+					led_toggle(x,y,0);
+					osDelay(300);
+					led_unset(x,y,0);
+				}
+			}
+	
+		point_t * p = points2blink;
+		while (p != NULL)
+		{
+			led_toggle(p->x, p->y, p->z);
+			p = p->next;
+		}
+		osDelay(300);
+	}
 }
 
 /*
@@ -54,7 +90,7 @@ static inline int32_t map(int32_t x, int32_t in_min, int32_t in_max, int32_t out
 
 void StartPwmTask(void const * argument)
 {
-
+	
 	if (HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3) != HAL_OK)
 	{
 		printf("Error Starting PWM\n");
@@ -81,7 +117,7 @@ void StartPwmTask(void const * argument)
 		{
 			printf("Error Stopping ADC\n");
 		}
- 		prescale = map(conval, 0, 0x0FFF, 0, 333);
+ 		prescale = map(conval, 0, 0x0FFF, 0, 100);
 
 		sprintf(p_str, "map(%x) = %u", (unsigned)conval, (unsigned)prescale);
 
@@ -107,5 +143,21 @@ void StartPwmTask(void const * argument)
 		// TODO implémentation d'un seuil variable pour la vérification
 		osDelay(20);
 	}
+	
+	
+	/*	
+	HAL_GPIO_DeInit(GPIOA, GPIO_PIN_2);
+	GPIO_InitTypeDef GPIO_InitStruct;
+	GPIO_InitStruct.Pin = GPIO_PIN_2;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FAST;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
+	
+
+	while(1){osDelay(5);}
+	*/
 
 }
