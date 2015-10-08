@@ -58,7 +58,7 @@ void StartBlinkTask(void const * argument)
 	
 	while(1)
 	{
-	
+			/*
 			for(int y = 0; y < 9; y++)
 			{
 				for(int x = 0; x < 9; x++)
@@ -68,6 +68,7 @@ void StartBlinkTask(void const * argument)
 					led_unset(x,y,0);
 				}
 			}
+			*/
 	
 		point_t * p = points2blink;
 		while (p != NULL)
