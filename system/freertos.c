@@ -32,6 +32,10 @@
 #include "database_utils.h"
 #include "database_structures.h"
 
+
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -332,6 +336,12 @@ void _cbrundb(WM_MESSAGE * pMsg)
 	
 }
 
+extern GUI_CONST_STORAGE GUI_BITMAP bmarrowrdefault;
+extern GUI_CONST_STORAGE GUI_BITMAP bmarrowdefault;
+extern GUI_CONST_STORAGE GUI_BITMAP bmarrowrclicked;
+extern GUI_CONST_STORAGE GUI_BITMAP bmarrowclicked;
+
+
 void run_db(void)
 {
 /*	
@@ -387,18 +397,22 @@ void run_db(void)
 													db_nav_win, WM_CF_SHOW,
 													0,  GUI_ID_BUTTON0);
 
-	BUTTON_SetText(bt_prev_widget, "prev");
 
 	BUTTON_Handle bt_next_widget = BUTTON_CreateEx(	700, 100,
 													100, 380,
 													db_nav_win, WM_CF_SHOW,
 													0,  GUI_ID_BUTTON1);
-	BUTTON_SetText(bt_next_widget, "next");
 	
-	TEXT_SetFont(motif_name_widget, GUI_FONT_24_ASCII);
-	BUTTON_SetFont(bt_prev_widget, GUI_FONT_24_ASCII);
-	BUTTON_SetFont(bt_next_widget, GUI_FONT_24_ASCII);
-	MULTIEDIT_SetFont(motif_desc_widget, GUI_FONT_24_ASCII);
+	TEXT_SetFont(motif_name_widget, GUI_FONT_24_1);
+	BUTTON_SetFont(bt_prev_widget, GUI_FONT_24_1);
+	BUTTON_SetFont(bt_next_widget, GUI_FONT_24_1);
+	MULTIEDIT_SetFont(motif_desc_widget, GUI_FONT_24_1);
+	MULTIEDIT_SetWrapWord(motif_desc_widget);
+
+	BUTTON_SetBitmap(bt_prev_widget, BUTTON_BI_UNPRESSED, &bmarrowdefault);
+	BUTTON_SetBitmap(bt_next_widget, BUTTON_BI_UNPRESSED, &bmarrowrdefault);
+	BUTTON_SetBitmap(bt_prev_widget, BUTTON_BI_PRESSED  , &bmarrowclicked);
+	BUTTON_SetBitmap(bt_next_widget, BUTTON_BI_PRESSED  , &bmarrowrclicked);
 
 }
 

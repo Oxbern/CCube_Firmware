@@ -127,7 +127,7 @@ int main(void)
 	GUI_SelectLayer(0);
 
 	GUI_SetColor(GUI_WHITE);
-	GUI_SetDefaultFont(GUI_FONT_24_ASCII);
+	GUI_SetDefaultFont(GUI_FONT_24_1);
 	GUI_Clear();
 
 
