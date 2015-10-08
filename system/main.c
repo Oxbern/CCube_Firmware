@@ -120,6 +120,7 @@ int main(void)
 	//LTDC_Init();
 
 	GUI_Init();
+	GUI_UC_SetEncodeUTF8();
 	
 	WM_MULTIBUF_Enable(1);
 	GUI_SetLayerVisEx(1, 0);

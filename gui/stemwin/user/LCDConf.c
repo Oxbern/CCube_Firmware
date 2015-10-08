@@ -97,7 +97,7 @@ Purpose     : Display controller configuration (single layer)
 #define COLOR_CONVERSION_0 GUICC_M8888I
 
 #if (GUI_NUM_LAYERS > 1)
-	#define COLOR_CONVERSION_1 GUICC_M1555I
+	#define COLOR_CONVERSION_1 GUICC_M8888I
 
 #endif
 
@@ -107,7 +107,7 @@ Purpose     : Display controller configuration (single layer)
 #define DISPLAY_DRIVER_0 GUIDRV_LIN_32
 
 #if (GUI_NUM_LAYERS > 1)
-	#define DISPLAY_DRIVER_1 GUIDRV_LIN_16
+	#define DISPLAY_DRIVER_1 GUIDRV_LIN_32
 
 #endif
 //
@@ -489,7 +489,7 @@ static void LCD_LL_Init(void)
   HAL_LTDC_ProgramLineEvent(&hltdc, 0);
   
   /* Enable dithering */
-  //HAL_LTDC_EnableDither(&hltdc);
+  HAL_LTDC_EnableDither(&hltdc);
   
   /* LCD Backlight */
   HAL_GPIO_WritePin(GPIOF, GPIO_PIN_9, GPIO_PIN_SET);

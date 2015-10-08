@@ -15,19 +15,30 @@ void StartLedTask(void const * argument)
 
 	int i = 0;
 
+	/*
 	led_set(1,1,0);
 	led_set(1,1,1);
 	led_set(1,1,8);
 	led_set(1,1,7);
+	*/
+
+	led_update(9);
+
+	osDelay(500);
+
+	led_set(0,0,0);
+	
+	led_update(0);	
 
     while(1)
     {
-
+		/*
 		if (!led_update(i))
 		{
 			printf("Error Trying to update\n");
 		}
 		i = (i+1)%9;
+		*/
 		osDelay(1);
     }
 }
@@ -94,7 +105,7 @@ void StartPwmTask(void const * argument)
 		}
 		p = prescale?((TIM_PERIOD + 1) * prescale) / 100 - 1 : 0;
 		// TODO implémentation d'un seuil variable pour la vérification
-		osDelay(50);
+		osDelay(20);
 	}
 
 }

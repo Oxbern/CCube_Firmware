@@ -9,7 +9,7 @@
 /**
  * buffer containing led data to be sent to sink drivers
  */
-static uint16_t led_buffer[9][10] = {
+static uint16_t led_buffer[10][10] = {
 	// 1th layer
 	{
 		0b0000000000000000, // 9th row of columns
@@ -126,6 +126,18 @@ static uint16_t led_buffer[9][10] = {
 		0b0000000000000000, // 2nd row of columns
 		0b0000000000000000, // 1st row of columns
 		0b0000000100000000, // layer selection
+	},
+	{
+		0b0000000000000000, // 9th row of columns
+		0b0000000000000000, // 8th row of columns
+		0b0000000000000000, // 7th row of columns
+		0b0000000000000000, // 6th row of columns
+		0b0000000000000000, // 5th row of columns
+		0b0000000000000000, // 4th row of columns
+		0b0000000000000000, // 3nd row of columns
+		0b0000000000000000, // 2nd row of columns
+		0b0000000000000000, // 1st row of columns
+		0b0000000000000000, // layer selection
 	}
 };
 

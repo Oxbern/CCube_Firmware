@@ -217,8 +217,10 @@ FRESULT scan_files (
 
 database_t * db = NULL;
 int current_motif_index;
-char current_motif_title[128];
+char current_motif_title[256];
 char * current_motif_desc;
+TEXT_Handle motif_name_widget;
+MULTIEDIT_HANDLE motif_desc_widget;
 
 void _cbrundb(WM_MESSAGE * pMsg)
 {
@@ -236,6 +238,17 @@ void _cbrundb(WM_MESSAGE * pMsg)
 				{
 					case WM_NOTIFICATION_RELEASED:
 						{
+							if (current_motif_index > 1)
+							{
+								current_motif_index--;
+								motif_t * m = db->motifs;
+								for (uint32_t i = 1; i < current_motif_index; i++)
+									m = m->next;
+								sprintf(current_motif_title, "%i/%i -- %s", (int)current_motif_index, (int)db->nb_motifs, m->name);
+								current_motif_desc = m->desc;
+								MULTIEDIT_SetText(motif_desc_widget, current_motif_desc);
+								TEXT_SetText(motif_name_widget, current_motif_title);
+							}
 						}
 						break;
 				}
@@ -243,10 +256,24 @@ void _cbrundb(WM_MESSAGE * pMsg)
 			}
 			else if (Id == GUI_ID_BUTTON1) // Next
 			{
+				switch(NCode)
+				{
 					case WM_NOTIFICATION_RELEASED:
 						{
+							if (current_motif_index < db->nb_motifs)
+							{
+								current_motif_index++;
+								motif_t * m = db->motifs;
+								for (uint32_t i = 1; i < current_motif_index; i++)
+									m = m->next;
+								sprintf(current_motif_title, "%i/%i -- %s", (int)current_motif_index, (int)db->nb_motifs, m->name);
+								current_motif_desc = m->desc;
+								MULTIEDIT_SetText(motif_desc_widget, current_motif_desc);
+								TEXT_SetText(motif_name_widget, current_motif_title);
+							}
 						}
 						break;
+				}
 			}
 			break;
 		case WM_PAINT:
@@ -292,14 +319,14 @@ void run_db(void)
 
 	WINDOW_SetBkColor(db_nav_win, GUI_WHITE);
 
-	TEXT_Handle motif_name_widget = TEXT_CreateEx(	0, 0,
+	motif_name_widget = TEXT_CreateEx(	0, 0,
 													800, 100,
 													db_nav_win, WM_CF_SHOW,
 													TEXT_CF_HCENTER | TEXT_CF_VCENTER, GUI_ID_TEXT0,
 													(const char *)current_motif_title);
 
 	
-	MULTIEDIT_HANDLE motif_desc_widget = MULTIEDIT_CreateEx(	100, 100,
+	motif_desc_widget = MULTIEDIT_CreateEx(	100, 100,
 																600, 380,
 																db_nav_win, WM_CF_SHOW,
 																MULTIEDIT_CF_AUTOSCROLLBAR_V, GUI_ID_MULTIEDIT1,
