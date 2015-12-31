@@ -1,8 +1,10 @@
-CCube-Firmware
+CCube_Firmware
 ==============
 
-Requirements
+Requirements (deprecated)
 ------------
+
+TODO: redo this section
 
 1. Docker.io (docker + docker-compose)
 
