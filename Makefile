@@ -1,5 +1,5 @@
 # Binaries will be generated with this name (.elf, .bin, .hex, etc)
-PROJ_NAME=TestLTDC
+PROJ_NAME=CCube_Firmware
 BUILD=build
 
 ##########
