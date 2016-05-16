@@ -51,3 +51,26 @@ Create a `build` folder if you still don't have it in your project tree, set the
 * `make`      : to compile and link your hex file
 * `make burn` : to flash the target board
 * `make gdb`  : to debug your program after launching the `st-utils` utility in another shell
+
+## Notes on using ST's usb cdc stack
+
+Here is some tips to get up and running with cdc communication with a pc :
+* Get a serial terminal like `gtkterm`on your pc
+* have a look at the `usb/user/usbd_cdc_if.h` and `usb/user/usbd_cdc_if.c` files, they containt the two main functions you will have to use :
+    * `CDC_Receive_FS` this is the function that get called back after receiving a packet from the pc, you should change its content to suit your application needs
+    * `CDC_Transmit_FS` this is the function to call when you want to send out something to the pc
+these are basically wrappers around the combo :
+```C
+USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len); // set packet to transmit
+USBD_CDC_TransmitPacket(hUsbDevice_0); // transmit packet
+```
+and for receiving :
+```C
+USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]); // set receive buffer location
+USBD_CDC_ReceivePacket(hUsbDevice_0); // receive packet
+```
+* Then connect the board to the pc and check if everything is ok with the `dmesg` and `lsusb` commands
+* Launch `gtkterm` (with `sudo` if you aren't in the `dialout` group)
+* In `Configuration/Port` select the board's port (typically `ttyACM0` or `ttyUSB0`)
+* Optionnally you can play around with the `local echo` and `CR LF auto` options in the `Configuration` menu
+* You can send bytes by typing on your keyboard or send directly hexadecimal data with the `View/Send hexadecimal data` option
