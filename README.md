@@ -1,33 +1,33 @@
 CCube_Firmware
 ==============
 
-Requirements (deprecated)
+Requirements
 ------------
 
-TODO: redo this section
-
-1. Docker.io (docker + docker-compose)
-
-    https://docs.docker.com/installation/debian/
-    https://docs.docker.com/compose/install/
-
-2. eclipse
-
-    http://eclipse.ialto.com/technology/epp/downloads/release/luna/SR2/eclipse-cpp-luna-SR2-linux-gtk-x86_64.tar.gz
-
-
-3. STCubeMX
-
-    http://www.st.com/web/en/catalog/tools/PF257931#
-
-Setup build environment
-------------------------
-
-In order to get build environment just execute the following command:
+1. ARM GCC
 
 ```bash
-$ make tools
+sudo apt-get install gcc-arm-none-eabi
 ```
+
+2. st-link utility
+
+Project can be found here: https://github.com/texane/stlink
+
+Here is a list of commands which should download and compile st-link:
+
+```bash
+git clone https://github.com/texane/stlink.git
+cd stlink
+mkdir build && cd build
+sudo apt-get install build-essential pkg-config intltool cmake libusb-1.0.0-dev
+cmake -DCMAKE_BUILD_TYPE=Debug ..
+make
+```
+
+3. (Optional) STCubeMX to edit the project configuration
+
+http://www.st.com/content/st_com/en/products/development-tools/software-development-tools/stm32-software-development-tools/stm32-configurators-and-code-generators/stm32cubemx.html
 
 Generate firmware
 -----------------
@@ -35,23 +35,27 @@ Generate firmware
 In order to build the firmware just execute the following command:
 
 ```bash
-$ make
+make
 ```
 
-Flashing target:
-----------------
+Caution: you need to create a `build` directory first.
+
+Flash target
+------------
 
 In order to flash target board just execute the following command:
 
 ```bash
-$ make burn
+make burn
 ```
 
-Debugging firmware with gdb.
-----------------------------
+Caution: you need to edit the STLINK variable in the makefile first.
+
+Debug firmware with gdb
+-----------------------
 
 In order to run gdb on target board just execute the following command:
 
 ```bash
-$ make gdb
+make gdb
 ```
