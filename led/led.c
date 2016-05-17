@@ -199,3 +199,28 @@ void led_clear(void)
 		}
 	}
 }
+
+void led_test(void)
+{
+    led_clear();
+
+    	for (uint8_t z = 0; z < CUBE_WIDTH; z++)
+	{
+		for (uint8_t y = 0; y < CUBE_WIDTH; y++)
+		{
+			for (uint8_t x = 0; x < CUBE_WIDTH; x++)
+			{
+			    led_set(x, y, z);
+			    
+			    /* for (int k = 0; k < z+1; ++k) { */
+			    /* 	led_update(k); */
+			    /* } */
+
+			    led_update(z);
+			    for (int i = 0; i < 1000000; ++i) {}
+			}
+		}
+	}
+
+    led_clear();
+}

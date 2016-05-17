@@ -257,7 +257,10 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	
 	USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
   	USBD_CDC_ReceivePacket(hUsbDevice_0);
-  return (result);
+
+	led_test();
+	
+	return (result);
   /* USER CODE END 6 */ 
 }
 
