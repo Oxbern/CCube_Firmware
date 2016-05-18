@@ -32,6 +32,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
+#include "./../../led/led.h"
 #include <stdio.h>
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -152,10 +153,40 @@ static int8_t CDC_DeInit_FS(void)
   */
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 { 
+    static uint8_t buff_RX[512];
+    static uint8_t buff_TX[512];
+
     /* USER CODE BEGIN 5 */
     switch (cmd)
     {
     case CDC_SEND_ENCAPSULATED_COMMAND:
+	
+	for (int i = 0; i < length; i++)
+	{
+		buff_TX[i] = buff_RX[i];
+	}
+
+	if (buff_TX[0]=='\r' || buff_TX[0]=='\n')
+	{
+		printf("\n>>> ");
+	} else {
+		buff_TX[length] = '\0';
+		printf("%s",(const char *)buff_TX);
+	}
+	
+	USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], length);
+	USBD_CDC_TransmitPacket(hUsbDevice_0);
+	
+	USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
+  	USBD_CDC_ReceivePacket(hUsbDevice_0);
+
+	if (buff_TX[0] == '1') {
+	    led_test1();
+	} else if (buff_TX[0] == '2') {
+	    led_test2();
+	} else if (buff_TX[0] == '3') {
+	    led_test3();
+	}
       
 	break;
       
@@ -235,38 +266,10 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
     uint8_t result = USBD_OK;
-	static uint8_t buff_RX[512];
-	static uint8_t buff_TX[512];
-	
-	int i = 0;
-	for (i = 0; i < *Len; i++)
-	{
-		buff_TX[i] = buff_RX[i];
-	}
 
-	if (buff_TX[0]=='\r' || buff_TX[0]=='\n')
-	{
-		printf("\n>>> ");
-	} else {
-		buff_TX[*Len] = '\0';
-		printf("%s",(const char *)buff_TX);
-	}
-	
-	USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);
-	USBD_CDC_TransmitPacket(hUsbDevice_0);
-	
-	USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
-  	USBD_CDC_ReceivePacket(hUsbDevice_0);
+    CDC_Control_FS(CDC_SEND_ENCAPSULATED_COMMAND, Buf, (uint16_t)*Len);
 
-	if (buff_TX[0] == '1') {
-	    led_test1();
-	} else if (buff_TX[0] == '2') {
-	    led_test2();
-	} else if (buff_TX[0] == '3') {
-	    led_test3();
-	}
-
-	return (result);
+    return (result);
   /* USER CODE END 6 */ 
 }
 
