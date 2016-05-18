@@ -204,21 +204,12 @@ void led_clear(void)
 void led_test1(void)
 {
       
-    for (uint8_t x = 0; x < CUBE_WIDTH; ++x)
+    for (uint8_t z = 0; z < CUBE_WIDTH; z++)
     {
-	for (uint8_t y = 0; y < CUBE_WIDTH; y++)
-	{
-	    for (uint8_t z = 0; z < CUBE_WIDTH; z++)
-	    {
-		led_set(x, y, 8-z); 
-		/* for (int k = 0; k < z+1; ++k) { */
-		/*     led_update(k); */
-		/* } */
-
-		led_update(8-z);
-		for (int i = 0; i < 1000000; ++i) {}
-	    }
-	}
+	led_set(0, 0, 8-z); 
+	
+	led_update(8-z);
+	for (int i = 0; i < 1000000; ++i) {}
     }
 
     led_clear();
@@ -227,21 +218,12 @@ void led_test1(void)
 void led_test2(void)
 {
       
-    for (uint8_t z = 0; z < CUBE_WIDTH; ++z)
+    for (uint8_t x = 0; x < CUBE_WIDTH; x++)
     {
-	for (uint8_t y = 0; y < CUBE_WIDTH; y++)
-	{
-	    for (uint8_t x = 0; x < CUBE_WIDTH; x++)
-	    {
-		led_set(x, y, z); 
-		/* for (int k = 0; k < z+1; ++k) { */
-		/*     led_update(k); */
-		/* } */
+	led_set(x, 0, 0); 
 
-		led_update(z);
-		for (int i = 0; i < 1000000; ++i) {}
-	    }
-	}
+	led_update(0);
+	for (int i = 0; i < 1000000; ++i) {}
     }
 
     led_clear();
@@ -250,21 +232,12 @@ void led_test2(void)
 void led_test3(void)
 {
       
-    for (uint8_t x = 0; x < CUBE_WIDTH; ++x)
+    for (uint8_t z = 0; z < CUBE_WIDTH; z++)
     {
-	for (uint8_t y = 0; y < CUBE_WIDTH; y++)
-	{
-	    for (uint8_t z = 0; z < CUBE_WIDTH; z++)
-	    {
-		led_set(x, y, z); 
-		/* for (int k = 0; k < z+1; ++k) { */
-		/*     led_update(k); */
-		/* } */
+	led_set(0, 0, z); 
 
-		led_update(z);
-		for (int i = 0; i < 1000000; ++i) {}
-	    }
-	}
+	led_update(z);
+	for (int i = 0; i < 1000000; ++i) {}
     }
 
     led_clear();
