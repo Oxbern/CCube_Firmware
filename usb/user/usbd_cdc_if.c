@@ -234,7 +234,7 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  uint8_t result = USBD_OK;
+    uint8_t result = USBD_OK;
 	static uint8_t buff_RX[512];
 	static uint8_t buff_TX[512];
 	
@@ -258,7 +258,9 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
   	USBD_CDC_ReceivePacket(hUsbDevice_0);
 
-	led_test();
+	led_test1();
+	led_test2();
+	led_test3();
 	
 	return (result);
   /* USER CODE END 6 */ 
