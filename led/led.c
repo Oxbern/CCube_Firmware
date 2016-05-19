@@ -11,6 +11,7 @@
  */
 static uint16_t led_buffer[10][10] = {
 	// 1th layer
+    
 	{
 		0b0000000000000000, // 9th row of columns
 		0b0000000000000000, // 8th row of columns
@@ -141,6 +142,10 @@ static uint16_t led_buffer[10][10] = {
 		0b0000000000000000, // layer selection
 	}
 };
+
+void buffer_update(int i, int j, uint16_t newValue) {
+    led_buffer[i][j] = newValue;
+}
 
 
 inline void led_set(uint8_t x, uint8_t y, uint8_t z)

@@ -7,6 +7,11 @@
 #define CUBE_WIDTH 9
 
 /**
+ * Update led_buffer  
+ */
+void buffer_update(int i, int j, uint16_t newValue);
+
+/**
  * Set LED on
  */
 void led_set(uint8_t x, uint8_t y, uint8_t z);
