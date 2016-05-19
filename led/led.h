@@ -41,4 +41,10 @@ bool led_update(int i);
  */
 void led_clear(void);
 
+
+/** 
+ * Print OK on the LEDs
+ */
+void led_test_ok(void);
+
 #endif
