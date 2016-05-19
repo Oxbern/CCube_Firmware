@@ -204,47 +204,42 @@ void led_clear(void)
 		}
 	}
 }
+static int offset_test1 = 0;
 
 void led_test1(void)
 {
-      
-    for (uint8_t z = 0; z < CUBE_WIDTH; z++)
-    {
-	led_set(0, 0, 8-z); 
-	
-	led_update(8-z);
-	for (int i = 0; i < 1000000; ++i) {}
+    offset_test1 = offset_test1 % 81;
+    led_set(offset_test1/9, offset_test1%9,0);
+    offset_test1 = offset_test1 + 1;
+    if (offset_test1 == 81) {
+	led_clear();
     }
-
-    led_clear();
+    led_update(0);
 }
 
+static int offset_test2 = 0;
 void led_test2(void)
 {
-      
-    for (uint8_t x = 0; x < CUBE_WIDTH; x++)
-    {
-	led_set(x, 0, 0); 
-
-	led_update(0);
-	for (int i = 0; i < 1000000; ++i) {}
+    offset_test2 = offset_test2 % 81;
+    led_set(offset_test2/9, offset_test2%9, 8);
+    offset_test2 = offset_test2 + 1;
+    if (offset_test2 == 81) {
+	led_clear();
     }
-
-    led_clear();
+    led_update(8);
 }
 
+static int offset_test3 = 0;
 void led_test3(void)
 {
-      
-    for (uint8_t z = 0; z < CUBE_WIDTH; z++)
-    {
-	led_set(0, 0, z); 
-
-	led_update(z);
-	for (int i = 0; i < 1000000; ++i) {}
+    offset_test3 = offset_test3 % 81;
+    led_set(offset_test3/9, offset_test3%9, 4);
+    offset_test3 = offset_test3 + 1;
+    if (offset_test3 == 81) {
+	led_clear();
     }
+    led_update(4);
 
-    led_clear();
 }
 
 void led_test_ok(void) 
@@ -253,16 +248,12 @@ void led_test_ok(void)
 
     // The O
     led_set(4, 3, 6);
-
     led_set(4, 4, 5);
     led_set(4, 2, 5);
-
     led_set(4, 1, 4);
     led_set(4, 5, 4);
-
     led_set(4, 4, 3);
     led_set(4, 2, 3);
-
     led_set(4, 3, 2);
             
     // The K
@@ -271,7 +262,6 @@ void led_test_ok(void)
     led_set(4, 6, 4);
     led_set(4, 6, 3);
     led_set(4, 6, 2);
-
     led_set(4, 8, 6);
     led_set(4, 7, 5);
     led_set(4, 7, 3);
