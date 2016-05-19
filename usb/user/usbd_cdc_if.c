@@ -216,27 +216,22 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     uint8_t Current_CMD = 0;
     static uint8_t buff_RX[512];
     static uint8_t buff_TX[512];
-
-    if (Buf[0] == BEGINNING_DATA) {
-    	Empty_UserRxBufferFS();
-    	UserRxBufferFS_Current_Index = 0;
-    	UserRxBufferFS_Expected_Size = Buf[3] + (Buf[2] << 8);
-	Current_CMD = Buf[1];
-    }
-
-    for (int i = 4; i < 62; ++i) {
-    	UserRxBufferFS[UserRxBufferFS_Current_Index] = Buf[i];
-    	UserRxBufferFS_Current_Index++;
-    }
-
-    if (UserRxBufferFS_Current_Index == UserRxBufferFS_Expected_Size) {
-    	CDC_Control_FS(Current_CMD, UserRxBufferFS, UserRxBufferFS_Current_Index*sizeof(uint8_t));
-    }
+    led_test2();
     
-    /* for (int i = 0; i < *Len; i++) */
-    /* { */
-    /* 	buff_TX[i] = buff_RX[i]; */
+
+    /* for (int i = 4; i < 62; ++i) { */
+    /* 	UserRxBufferFS[UserRxBufferFS_Current_Index] = Buf[i]; */
+    /* 	UserRxBufferFS_Current_Index++; */
     /* } */
+
+    /* if (UserRxBufferFS_Current_Index == UserRxBufferFS_Expected_Size) { */
+    /* 	CDC_Control_FS(Current_CMD, UserRxBufferFS, UserRxBufferFS_Current_Index*sizeof(uint8_t)); */
+    /* } */
+    
+    for (int i = 0; i < *Len; i++)
+    {
+    	buff_TX[i] = buff_RX[i];
+    }
 
     /* if (buff_TX[0]=='\r' || buff_TX[0]=='\n') */
     /* { */
@@ -245,7 +240,17 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     /* 	buff_TX[*Len] = '\0'; */
     /* 	printf("%s",(const char *)buff_TX); */
     /* } */
-	
+
+    if (buff_TX[0] == BEGINNING_DATA) {
+    	/* Empty_UserRxBufferFS(); */
+    	/* UserRxBufferFS_Current_Index = 0; */
+    	/* UserRxBufferFS_Expected_Size = Buf[3] + (Buf[2] << 8); */
+    	/* Current_CMD = Buf[1]; */
+    	led_test1();
+    } else {
+	led_test3();
+    }
+    
     USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);
     USBD_CDC_TransmitPacket(hUsbDevice_0);
 	
