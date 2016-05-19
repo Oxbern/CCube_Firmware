@@ -59,9 +59,9 @@
   /* USER CODE BEGIN 1 */
 /* Define size for the receive and transmit buffer over CDC */
 /* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  4
+#define APP_RX_DATA_SIZE  30
 #define APP_TX_DATA_SIZE  4
-  /* USER CODE END 1 */  
+  /* USER CODE END 1 */
 /**
   * @}
   */ 
@@ -85,6 +85,11 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 
 /* Send Data over USB CDC are stored in this buffer       */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
+
+uint8_t UserRxBufferFS_Current_Index;
+uint8_t UserRxBufferFS_Expected_Size;
+
+#define BEGINNING_DATA 0x01 
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -152,92 +157,25 @@ static int8_t CDC_DeInit_FS(void)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
-{ 
-    static uint8_t buff_RX[512];
-    static uint8_t buff_TX[512];
-
+{
     /* USER CODE BEGIN 5 */
+    int k = 0; 
     switch (cmd)
     {
-    case CDC_SEND_ENCAPSULATED_COMMAND:
+    case CDC_DISPLAY_CUBE:
 	
-	for (int i = 0; i < length; i++)
-	{
-		buff_TX[i] = buff_RX[i];
+	for (int i = 0; i < CUBE_WIDTH; ++i) {
+	    for (int j = 0; j < CUBE_WIDTH; ++j) {
+		buffer_update(i, j, (pbuf[k] << 8) + pbuf[k+1]);
+		k += 2;
+	    }
 	}
 
-	if (buff_TX[0]=='\r' || buff_TX[0]=='\n')
-	{
-		printf("\n>>> ");
-	} else {
-		buff_TX[length] = '\0';
-		printf("%s",(const char *)buff_TX);
-	}
-	
-	USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], length);
-	USBD_CDC_TransmitPacket(hUsbDevice_0);
-	
-	USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
-  	USBD_CDC_ReceivePacket(hUsbDevice_0);
 
-	if (buff_TX[0] == '1') {
-	    led_test1();
-	} else if (buff_TX[0] == '2') {
-	    led_test2();
-	} else if (buff_TX[0] == '3') {
-	    led_test3();
-	}
-      
-	break;
-      
-    case CDC_GET_ENCAPSULATED_RESPONSE:
-      
-	break;
-
-    case CDC_SET_COMM_FEATURE:
- 
-	break;
-
-    case CDC_GET_COMM_FEATURE:
-
-	break;
-
-    case CDC_CLEAR_COMM_FEATURE:
-
-	break;
-
-	/*******************************************************************************/
-	/* Line Coding Structure                                                       */
-	/*-----------------------------------------------------------------------------*/
-	/* Offset | Field       | Size | Value  | Description                          */
-	/* 0      | dwDTERate   |   4  | Number |Data terminal rate, in bits per second*/
-	/* 4      | bCharFormat |   1  | Number | Stop bits                            */
-	/*                                        0 - 1 Stop bit                       */
-	/*                                        1 - 1.5 Stop bits                    */
-	/*                                        2 - 2 Stop bits                      */
-	/* 5      | bParityType |  1   | Number | Parity                               */
-	/*                                        0 - None                             */
-	/*                                        1 - Odd                              */ 
-	/*                                        2 - Even                             */
-	/*                                        3 - Mark                             */
-	/*                                        4 - Space                            */
-	/* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
-	/*******************************************************************************/
-    case CDC_SET_LINE_CODING:   
+	for (int l = 0; l < CUBE_WIDTH; ++l)
+	    led_update(l);
 	
 	break;
-
-    case CDC_GET_LINE_CODING:     
-
-	break;
-
-    case CDC_SET_CONTROL_LINE_STATE:
-
-	break;
-
-    case CDC_SEND_BREAK:
- 
-	break;    
     
     default:
 	break;
@@ -246,6 +184,15 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
     return (USBD_OK);
     /* USER CODE END 5 */
 }
+
+
+/* Helper */
+void Empty_UserRxBufferFS() {
+    for (int i = 0; i < APP_RX_DATA_SIZE; ++i) {
+	UserRxBufferFS[i] = 0;
+    }
+ }
+
 
 /**
   * @brief  CDC_Receive_FS
@@ -264,14 +211,51 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
   */
 static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
-  /* USER CODE BEGIN 6 */
+    /* USER CODE BEGIN 6 */
     uint8_t result = USBD_OK;
+    uint8_t Current_CMD = 0;
+    static uint8_t buff_RX[512];
+    static uint8_t buff_TX[512];
 
-    CDC_Control_FS(CDC_SEND_ENCAPSULATED_COMMAND, Buf, (uint16_t)*Len);
+    if (Buf[0] == BEGINNING_DATA) {
+    	Empty_UserRxBufferFS();
+    	UserRxBufferFS_Current_Index = 0;
+    	UserRxBufferFS_Expected_Size = Buf[3] + (Buf[2] << 8);
+	Current_CMD = Buf[1];
+    }
+
+    for (int i = 4; i < 62; ++i) {
+    	UserRxBufferFS[UserRxBufferFS_Current_Index] = Buf[i];
+    	UserRxBufferFS_Current_Index++;
+    }
+
+    if (UserRxBufferFS_Current_Index == UserRxBufferFS_Expected_Size) {
+    	CDC_Control_FS(Current_CMD, UserRxBufferFS, UserRxBufferFS_Current_Index*sizeof(uint8_t));
+    }
+    
+    /* for (int i = 0; i < *Len; i++) */
+    /* { */
+    /* 	buff_TX[i] = buff_RX[i]; */
+    /* } */
+
+    /* if (buff_TX[0]=='\r' || buff_TX[0]=='\n') */
+    /* { */
+    /* 	printf("\n>>> "); */
+    /* } else { */
+    /* 	buff_TX[*Len] = '\0'; */
+    /* 	printf("%s",(const char *)buff_TX); */
+    /* } */
+	
+    USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);
+    USBD_CDC_TransmitPacket(hUsbDevice_0);
+	
+    USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
+    USBD_CDC_ReceivePacket(hUsbDevice_0);
 
     return (result);
-  /* USER CODE END 6 */ 
+    /* USER CODE END 6 */ 
 }
+
 
 /**
   * @brief  CDC_Transmit_FS
@@ -286,12 +270,12 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   */
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 {
-  uint8_t result = USBD_OK;
-  /* USER CODE BEGIN 7 */ 
-  USBD_CDC_SetTxBuffer(hUsbDevice_0, Buf, Len);   
-  result = USBD_CDC_TransmitPacket(hUsbDevice_0);
-  /* USER CODE END 7 */ 
-  return result;
+    uint8_t result = USBD_OK;
+    /* USER CODE BEGIN 7 */ 
+    USBD_CDC_SetTxBuffer(hUsbDevice_0, Buf, Len);   
+    result = USBD_CDC_TransmitPacket(hUsbDevice_0);
+    /* USER CODE END 7 */ 
+    return result;
 }
 
 /**

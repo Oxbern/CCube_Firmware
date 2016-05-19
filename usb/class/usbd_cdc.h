@@ -69,7 +69,7 @@
 /*  CDC definitions                                                    */
 /*---------------------------------------------------------------------*/
 #define CDC_SEND_ENCAPSULATED_COMMAND               0x00
-#define CDC_GET_ENCAPSULATED_RESPONSE               0x01
+#define CDC_DISPLAY_CUBE                            0x01
 #define CDC_SET_COMM_FEATURE                        0x02
 #define CDC_GET_COMM_FEATURE                        0x03
 #define CDC_CLEAR_COMM_FEATURE                      0x04
