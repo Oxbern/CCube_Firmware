@@ -251,37 +251,37 @@ void led_test_ok(void)
 {
     led_clear();
 
-    for (uint8_t z = 0; z < CUBE_WIDTH; z++)
-	{
+    // The O
+    led_set(4, 3, 6);
 
-            // The O
-            led_set(4, 3, 6);
+    led_set(4, 4, 5);
+    led_set(4, 2, 5);
 
-            led_set(4, 4, 5);
-            led_set(4, 2, 5);
+    led_set(4, 1, 4);
+    led_set(4, 5, 4);
 
-            led_set(4, 1, 4);
-            led_set(4, 5, 4);
+    led_set(4, 4, 3);
+    led_set(4, 2, 3);
 
-            led_set(4, 4, 3);
-            led_set(4, 2, 3);
-
-            led_set(4, 3, 2);
+    led_set(4, 3, 2);
             
-            // The K
-            led_set(4, 6, 6);
-            led_set(4, 6, 5);
-            led_set(4, 6, 4);
-            led_set(4, 6, 3);
-            led_set(4, 6, 2);
+    // The K
+    led_set(4, 6, 6);
+    led_set(4, 6, 5);
+    led_set(4, 6, 4);
+    led_set(4, 6, 3);
+    led_set(4, 6, 2);
 
-            led_set(4, 8, 6);
-            led_set(4, 7, 5);
-            led_set(4, 7, 3);
-            led_set(4, 7, 2);
+    led_set(4, 8, 6);
+    led_set(4, 7, 5);
+    led_set(4, 7, 3);
+    led_set(4, 7, 2);
+
+    for (uint8_t z = 0; z < CUBE_WIDTH; z++) {
 
             led_update(z);
         }
-    for (int i = 0; i < 1000000; ++i) {}
+    
+    for (int i = 0; i < 100000000; ++i) {}
     led_clear();
 }
