@@ -59,7 +59,7 @@
   /* USER CODE BEGIN 1 */
 /* Define size for the receive and transmit buffer over CDC */
 /* It's up to user to redefine and/or remove those define */
-#define APP_RX_DATA_SIZE  30
+#define APP_RX_DATA_SIZE  512
 #define APP_TX_DATA_SIZE  4
   /* USER CODE END 1 */
 /**
@@ -86,8 +86,8 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 /* Send Data over USB CDC are stored in this buffer       */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
-uint8_t UserRxBufferFS_Current_Index;
-uint8_t UserRxBufferFS_Expected_Size;
+uint16_t UserRxBufferFS_Current_Index;
+uint16_t UserRxBufferFS_Expected_Size;
 
 #define BEGINNING_DATA 0x01 
 
@@ -96,6 +96,8 @@ uint8_t UserRxBufferFS_Expected_Size;
 USBD_HandleTypeDef  *hUsbDevice_0;
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
+
+#define DEBUG 0
 
 /**
   * @}
@@ -159,7 +161,7 @@ static int8_t CDC_DeInit_FS(void)
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
     /* USER CODE BEGIN 5 */
-    int k = 0; 
+    int k = 0;
     switch (cmd)
     {
     case CDC_DISPLAY_CUBE:
@@ -231,24 +233,32 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     /* } */
 
     if (buff_TX[0] == BEGINNING_DATA) {
-    	Empty_UserRxBufferFS();
+	Current_CMD = buff_TX[1];
+	Empty_UserRxBufferFS();
     	UserRxBufferFS_Current_Index = 0;
     	UserRxBufferFS_Expected_Size = buff_TX[3] + (buff_TX[2] << 8);
-    	Current_CMD = buff_TX[1];
+#if DEBUG
+	if (UserRxBufferFS_Expected_Size == 0xc8) {
+	    led_test3();
+	}
+#endif
     	led_test1();
     } else {
-    	led_test3();
+	Current_CMD = buff_TX[1];
+    	led_test2();
     }
 
-    /* for (int i = 4; i < 62; ++i) { */
-    /* 	UserRxBufferFS[UserRxBufferFS_Current_Index] = buff_TX[i]; */
-    /* 	UserRxBufferFS_Current_Index++; */
-    /* } */
+    if (Current_CMD == 0x01) {
+	for (int i = 4; i < 62; ++i) {
+	    UserRxBufferFS[UserRxBufferFS_Current_Index] = buff_TX[i];
+	    UserRxBufferFS_Current_Index++;
+	}
+    }
 
-    /* if (UserRxBufferFS_Current_Index == UserRxBufferFS_Expected_Size) { */
-    /* 	led_test1(); */
-    /* 	CDC_Control_FS(Current_CMD, UserRxBufferFS, UserRxBufferFS_Current_Index*sizeof(uint8_t)); */
-    /* } */
+    if (Current_CMD == 0x01 && UserRxBufferFS_Current_Index >= UserRxBufferFS_Expected_Size) {
+    	led_test3();
+    	CDC_Control_FS(Current_CMD, UserRxBufferFS, UserRxBufferFS_Current_Index*sizeof(uint8_t));
+    }
 
     USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);
     USBD_CDC_TransmitPacket(hUsbDevice_0);
