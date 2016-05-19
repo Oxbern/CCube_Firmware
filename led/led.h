@@ -7,6 +7,11 @@
 #define CUBE_WIDTH 9
 
 /**
+ * Update led_buffer  
+ */
+void buffer_update(int i, int j, uint16_t newValue);
+
+/**
  * Set LED on
  */
 void led_set(uint8_t x, uint8_t y, uint8_t z);
@@ -41,10 +46,17 @@ bool led_update(int i);
  */
 void led_clear(void);
 
-
 /** 
  * Print OK on the LEDs
  */
 void led_test_ok(void);
+
+/**
+ * Tests : Switch all LEDs on and off   
+ */
+void led_test1(void);
+void led_test2(void);
+void led_test3(void);
+
 
 #endif

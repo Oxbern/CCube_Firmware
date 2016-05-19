@@ -10,6 +10,7 @@
  * buffer containing led data to be sent to sink drivers
  */
 static uint16_t led_buffer[10][10] = {
+
     // 1th layer
     {
         0b0000000000000000, // 9th row of columns
@@ -141,6 +142,10 @@ static uint16_t led_buffer[10][10] = {
     }
 };
 
+void buffer_update(int i, int j, uint16_t newValue) {
+    led_buffer[i][j] = newValue;
+}
+
 
 inline void led_set(uint8_t x, uint8_t y, uint8_t z)
 {
@@ -200,27 +205,44 @@ void led_clear(void)
 	}
 }
 
-void led_test(void)
+void led_test1(void)
 {
-    led_clear();
-
+      
     for (uint8_t z = 0; z < CUBE_WIDTH; z++)
-	{
-            for (uint8_t y = 0; y < CUBE_WIDTH; y++)
-		{
-                    for (uint8_t x = 0; x < CUBE_WIDTH; x++)
-			{
-			    led_set(x, y, z);
-			    
-			    /* for (int k = 0; k < z+1; ++k) { */
-			    /* 	led_update(k); */
-			    /* } */
+    {
+	led_set(0, 0, 8-z); 
+	
+	led_update(8-z);
+	for (int i = 0; i < 1000000; ++i) {}
+    }
 
-			    led_update(z);
-			    for (int i = 0; i < 1000000; ++i) {}
-			}
-		}
-	}
+    led_clear();
+}
+
+void led_test2(void)
+{
+      
+    for (uint8_t x = 0; x < CUBE_WIDTH; x++)
+    {
+	led_set(x, 0, 0); 
+
+	led_update(0);
+	for (int i = 0; i < 1000000; ++i) {}
+    }
+
+    led_clear();
+}
+
+void led_test3(void)
+{
+      
+    for (uint8_t z = 0; z < CUBE_WIDTH; z++)
+    {
+	led_set(0, 0, z); 
+
+	led_update(z);
+	for (int i = 0; i < 1000000; ++i) {}
+    }
 
     led_clear();
 }
