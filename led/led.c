@@ -329,27 +329,3 @@ void led_test_check(void)
     for (int i = 0; i < 100000000; ++i) {}
     led_clear();
 }
-
-void led_test_sphere(void) {
-    led_clear();
-
-    for (r = 0; r < 4; r++) 
-        for (theta = 0; theta < 8; theta++)
-            for (phi = 0; phi < 4; phi++) {
-                uint16_t x, y, z;
-                x = floor(r * sin(2*theta*M_PI/8) * cos(2*phi*M_PI/8)) + 4;
-                y = floor(r * sin(2*theta*M_PI/8) * sin(2*phi*M_PI/8)) + 4;
-                z = floor(r * cos(2*theta*M_PI/8)) + 4;
-
-                led_set(x, y, z);
-            }
-
-    for (uint8_t z = 0; z < CUBE_WIDTH; z++) {
-
-        led_update(z);
-    }
-
-    for (int i = 0; i < 100000000; ++i) {}
-    led_clear();
-
-}
