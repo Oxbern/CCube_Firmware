@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <inttypes.h>
+#include <math.h>
 
 #include "led.h"
 #include "spi.h"
@@ -247,15 +248,22 @@ void led_test_ok(void)
     led_clear();
 
     // The O
+    led_set(4, 1, 6);
+    led_set(4, 2, 6);
     led_set(4, 3, 6);
+
+    led_set(4, 0, 5);
+    led_set(4, 0, 4);    
+    led_set(4, 0, 3);
+
     led_set(4, 4, 5);
-    led_set(4, 2, 5);
-    led_set(4, 1, 4);
-    led_set(4, 5, 4);
+    led_set(4, 4, 4);    
     led_set(4, 4, 3);
-    led_set(4, 2, 3);
+
+    led_set(4, 1, 2);
+    led_set(4, 2, 2);    
     led_set(4, 3, 2);
-            
+
     // The K
     led_set(4, 6, 6);
     led_set(4, 6, 5);
@@ -274,4 +282,74 @@ void led_test_ok(void)
     
     for (int i = 0; i < 100000000; ++i) {}
     led_clear();
+}
+
+void led_test_uncheck(void) 
+{
+    led_clear();
+
+    for (uint8_t i = 0; i < CUBE_WIDTH; i++) {
+        led_set(i, i, i);
+        led_set(CUBE_WIDTH - i, CUBE_WIDTH - i, CUBE_WIDTH - i);
+    }
+
+    for (uint8_t z = 0; z < CUBE_WIDTH; z++) {
+
+        led_update(z);
+    }
+    
+    for (int i = 0; i < 100000000; ++i) {}
+    led_clear();
+}
+
+void led_test_check(void) 
+{
+    led_clear();
+
+    led_set(0, 0, 8);
+    led_set(1, 1, 7);
+    led_set(2, 2, 6);
+    
+    led_set(2, 2, 5);
+    led_set(3, 3, 4);
+    led_set(4, 4, 3);
+
+    led_set(4, 4, 2);
+    led_set(5, 5, 1);
+    led_set(6, 6, 0);
+
+    led_set(7, 7, 2);
+    led_set(8, 8, 4);
+
+    for (uint8_t z = 0; z < CUBE_WIDTH; z++) {
+
+        led_update(z);
+    }
+    
+    for (int i = 0; i < 100000000; ++i) {}
+    led_clear();
+}
+
+void led_test_sphere(void) {
+    led_clear();
+
+    for (r = 0; r < 4; r++) 
+        for (theta = 0; theta < 8; theta++)
+            for (phi = 0; phi < 4; phi++) {
+                uint16_t x, y, z;
+                x = floor(r * sin(2*theta*M_PI/8) * cos(2*phi*M_PI/8)) + 4;
+                y = floor(r * sin(2*theta*M_PI/8) * sin(2*phi*M_PI/8)) + 4;
+                z = floor(r * cos(2*theta*M_PI/8)) + 4;
+
+                led_set(x, y, z);
+            }
+
+    for (uint8_t z = 0; z < CUBE_WIDTH; z++) {
+
+        led_update(z);
+    }
+
+    for (int i = 0; i < 100000000; ++i) {}
+    led_clear();
+
 }
