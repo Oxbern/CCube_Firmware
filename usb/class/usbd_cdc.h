@@ -30,7 +30,7 @@
 #define __USB_CDC_H
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
@@ -57,11 +57,11 @@
 #define CDC_DATA_HS_MAX_PACKET_SIZE                 512  /* Endpoint IN & OUT Packet size */
 #define CDC_DATA_FS_MAX_PACKET_SIZE                 64  /* Endpoint IN & OUT Packet size */
 #define CDC_CMD_PACKET_SIZE                         8  /* Control Endpoint Packet size */ 
-
+    
 #define USB_CDC_CONFIG_DESC_SIZ                     67
 #define CDC_DATA_HS_IN_PACKET_SIZE                  CDC_DATA_HS_MAX_PACKET_SIZE
 #define CDC_DATA_HS_OUT_PACKET_SIZE                 CDC_DATA_HS_MAX_PACKET_SIZE
-
+    
 #define CDC_DATA_FS_IN_PACKET_SIZE                  CDC_DATA_FS_MAX_PACKET_SIZE
 #define CDC_DATA_FS_OUT_PACKET_SIZE                 CDC_DATA_FS_MAX_PACKET_SIZE
 
@@ -70,19 +70,16 @@
 /*---------------------------------------------------------------------*/
 #define CDC_SEND_ENCAPSULATED_COMMAND               0x00
 #define CDC_DISPLAY_CUBE                            0x01
-#define CDC_SET_COMM_FEATURE                        0x02
-#define CDC_GET_COMM_FEATURE                        0x03
-#define CDC_CLEAR_COMM_FEATURE                      0x04
-#define CDC_SET_LINE_CODING                         0x20
-#define CDC_GET_LINE_CODING                         0x21
-#define CDC_SET_CONTROL_LINE_STATE                  0x22
-#define CDC_SEND_BREAK                              0x23
+#define CDC_SEND_ACK                                0x20
+#define CDC_SEND_ACK_OK                             0x21
+#define CDC_SEND_ACK_ERR                            0x22
+#define CDC_SEND_ACK_NOK                            0x23
 
 /**
   * @}
   */ 
 
-
+     
 /** @defgroup USBD_CORE_Exported_TypesDefinitions
   * @{
   */
@@ -123,7 +120,12 @@ typedef struct
 }
 USBD_CDC_HandleTypeDef; 
 
-
+typedef struct _USB_CDC_ACK{
+    uint8_t cmd;
+    uint8_t cmd_ACK;
+    uint16_t sizeLeft_ACK;
+    uint16_t ACK_crc;
+} USB_CDC_ACK;
 
 /** @defgroup USBD_CORE_Exported_Macros
   * @{
