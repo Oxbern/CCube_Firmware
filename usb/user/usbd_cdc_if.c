@@ -237,18 +237,11 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	Empty_UserRxBufferFS();
     	UserRxBufferFS_Current_Index = 0;
     	UserRxBufferFS_Expected_Size = buff_TX[3] + (buff_TX[2] << 8);
-#if DEBUG
-	if (UserRxBufferFS_Expected_Size == 0xc8) {
-	    led_test3();
-	}
-#endif
-    	led_test1();
     } else {
 	Current_CMD = buff_TX[1];
-    	led_test2();
     }
 
-    if (Current_CMD == 0x01) {
+    if (Current_CMD == CDC_DISPLAY_CUBE) {
 	for (int i = 4; i < 62; ++i) {
 	    UserRxBufferFS[UserRxBufferFS_Current_Index] = buff_TX[i];
 	    UserRxBufferFS_Current_Index++;
@@ -256,7 +249,6 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     }
 
     if (Current_CMD == 0x01 && UserRxBufferFS_Current_Index >= UserRxBufferFS_Expected_Size) {
-    	led_test3();
     	CDC_Control_FS(Current_CMD, UserRxBufferFS, UserRxBufferFS_Current_Index*sizeof(uint8_t));
     }
 
