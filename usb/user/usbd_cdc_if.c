@@ -166,10 +166,10 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
     {
     case CDC_DISPLAY_CUBE:
 	
-	for (int i = 0; i < CUBE_WIDTH; ++i) {
-	    for (int j = 0; j < CUBE_WIDTH; ++j) {
-		buffer_update(i, j, (pbuf[k] << 8) + pbuf[k+1]);
-		k += 2;
+	for (int i = 0; i < CUBE_WIDTH+1; ++i) {
+	    for (int j = 0; j < CUBE_WIDTH+1; ++j) {
+			buffer_update(i, j, (pbuf[k] << 8) + pbuf[k+1]);
+			k += 2;
 	    }
 	}
 

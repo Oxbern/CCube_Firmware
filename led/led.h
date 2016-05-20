@@ -6,6 +6,12 @@
 
 #define CUBE_WIDTH 9
 
+/*
+	i = z
+	j = y
+	x = led_buffer[i][j]
+*/
+
 /**
  * Update led_buffer  
  */
