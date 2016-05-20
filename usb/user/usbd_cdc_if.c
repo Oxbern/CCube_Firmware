@@ -219,31 +219,18 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     static uint8_t buff_RX[512];
     static uint8_t buff_TX[512];
         
-    for (int i = 0; i < *Len; i++)
-    {
-    	buff_TX[i] = buff_RX[i];
-    }
-
-    /* if (buff_TX[0]=='\r' || buff_TX[0]=='\n') */
-    /* { */
-    /* 	printf("\n>>> "); */
-    /* } else { */
-    /* 	buff_TX[*Len] = '\0'; */
-    /* 	printf("%s",(const char *)buff_TX); */
-    /* } */
-
-    if (buff_TX[0] == BEGINNING_DATA) {
-	Current_CMD = buff_TX[1];
+    if (buff_RX[0] == BEGINNING_DATA) {
+	Current_CMD = buff_RX[1];
 	Empty_UserRxBufferFS();
     	UserRxBufferFS_Current_Index = 0;
-    	UserRxBufferFS_Expected_Size = buff_TX[3] + (buff_TX[2] << 8);
+    	UserRxBufferFS_Expected_Size = buff_RX[3] + (buff_RX[2] << 8);
     } else {
-	Current_CMD = buff_TX[1];
+	Current_CMD = buff_RX[1];
     }
 
     if (Current_CMD == CDC_DISPLAY_CUBE) {
 	for (int i = 4; i < 62; ++i) {
-	    UserRxBufferFS[UserRxBufferFS_Current_Index] = buff_TX[i];
+	    UserRxBufferFS[UserRxBufferFS_Current_Index] = buff_RX[i];
 	    UserRxBufferFS_Current_Index++;
 	}
     }
@@ -252,7 +239,8 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     	CDC_Control_FS(Current_CMD, UserRxBufferFS, UserRxBufferFS_Current_Index*sizeof(uint8_t));
     }
 
-    USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);
+    buff_TX[0] = 0b001;
+    USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], 1);
     USBD_CDC_TransmitPacket(hUsbDevice_0);
 	
     USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
