@@ -52,17 +52,5 @@ bool led_update(int i);
  */
 void led_clear(void);
 
-/** 
- * Print OK on the LEDs
- */
-void led_test_ok(void);
-
-/**
- * Tests : Switch all LEDs on and off   
- */
-void led_test1(void);
-void led_test2(void);
-void led_test3(void);
-
 
 #endif
