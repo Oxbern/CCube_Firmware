@@ -249,6 +249,11 @@ static void Set_ACKSend_NOK(uint8_t CMD, uint16_t size_buff, uint16_t crc) {
 
 }
 
+osThreadId controlTaskHandle;
+void StartControlTask(void const *args) {
+    
+}
+
 static uint8_t *CDC_Set_ACK(uint8_t *buff_RX) {
     static uint8_t Current_CMD = 0;
     static int16_t UserRxBufferFS_Expected_Size;
@@ -295,6 +300,7 @@ static uint8_t *CDC_Set_ACK(uint8_t *buff_RX) {
 
     return ACK;
 }
+
 /**
   * @brief  CDC_Receive_FS
   *         Data received over USB OUT endpoint are sent over CDC interface 
@@ -316,6 +322,9 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     uint8_t result = USBD_OK;
     static uint8_t buff_RX[512];
     static uint8_t buff_TX[512];
+    
+    osThreadDef(controlTask, StartControlTask, osPriorityHigh, 0, 8192);
+    controlTaskHandle = osThreadCreate(osThread(controlTask), NULL);
 
     if (Is_CMD_Known(buff_RX[1])) {
 	memcpy(buff_TX, CDC_Set_ACK(&buff_RX[0]), ACK_SIZE);
