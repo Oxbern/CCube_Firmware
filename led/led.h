@@ -53,4 +53,7 @@ bool led_update(int i);
 void led_clear(void);
 
 
+void led_test1(void);
+void led_test2(void);
+
 #endif
