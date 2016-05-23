@@ -33,6 +33,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
 #include "./../../led/led.h"
+#include "crc.h"
+
 #include <stdio.h>
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -176,17 +178,27 @@ static int8_t CDC_DeInit_FS(void)
   * @param  length: Number of data to be sent (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static void CDC_Control_FS(void *args) {
+static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length) {
 
-    Control_Args *control_args = (Control_Args*)args;
-
-    switch (control_args->cmd) {
+    /* Control_Args *control_args = (Control_Args*)args; */
+    int k = 0;
+    
+    switch (cmd) {
     case CDC_DISPLAY_CUBE:
-	printf("Display the cube\n");
+	for (int i = 0; i < CUBE_WIDTH+1; ++i) {
+	    for (int j = 0; j < CUBE_WIDTH+1; ++j) {
+		buffer_update(i, j, (pbuf[k] << 8) + pbuf[k+1]);
+		k += 2;
+	    }
+	}
+	
+	
+	for (int l = 0; l < CUBE_WIDTH; ++l)
+	    led_update(l);
 	break;
     }
 
-    return;
+    return 0;
 }
 
 
@@ -198,13 +210,13 @@ void Empty_UserRxBufferFS() {
     UserRxBufferFS_Current_Index = 0;
 }
 
-static void printBuffer(uint8_t *buffer, uint16_t size) {
-    printf("ACK : |");
-    for (int i = 0; i < size; ++i) {
-	printf(" %u |", buffer[i]);
-    }
-    printf("\n");
-}
+/* static void printBuffer(uint8_t *buffer, uint16_t size) { */
+/*     printf("ACK : |"); */
+/*     for (int i = 0; i < size; ++i) { */
+/* 	printf(" %u |", buffer[i]); */
+/*     } */
+/*     printf("\n"); */
+/* } */
 
 static bool Is_CMD_Known(uint8_t CMD) {
     if (CMD == CDC_DISPLAY_CUBE ||
@@ -318,6 +330,7 @@ static uint8_t *CDC_Set_ACK(uint8_t *buff_RX) {
 		      size_left_buff, CRC_compute(buff_RX)); 
 }
 
+
 /**
   * @brief  CDC_Receive_FS
   *         Data received over USB OUT endpoint are sent over CDC interface 
@@ -354,25 +367,18 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	
 	HANDLE_DATA_RECEIVED = false;
 
-	Control_Args args = {.cmd = UserRxBufferFS_Current_CMD,
-			     .Buf = UserRxBufferFS,
-			     .size = UserRxBufferFS_Current_Index*sizeof(uint8_t)};
-	pthread_t Control_FS_thread;
-	
-	
-	if(pthread_create(&Control_FS_thread, NULL, (void *)CDC_Control_FS, &args)) {
-	    /* Do something smart to handle error */
-	}
+	/* Control_Args args = {.cmd = UserRxBufferFS_Current_CMD, */
+	/* 		     .Buf = UserRxBufferFS, */
+	/* 		     .size = UserRxBufferFS_Current_Index*sizeof(uint8_t)}; */
 
-	/* if(pthread_join(Control_FS_thread, NULL)) { */
-	/*     /\* ERROR HANDLING ? *\/ */
-	/* } */
-	
+	/* osThreadDef(CDC_Control_FS, osPriorityNormal, DEFAULT_STACK_SIZE); */
+	/* Control_FS_ThreadID = osThreadCreate(osThread(Control_FS), NULL); */
+
+	CDC_Control_FS(UserRxBufferFS_Current_CMD, UserRxBufferFS,
+		       UserRxBufferFS_Current_Index*sizeof(uint8_t));
+
     }
     
-    return USBD_CDC_TransmitPacket(buff_TX);
-
-
     USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);
     USBD_CDC_TransmitPacket(hUsbDevice_0);
 	
