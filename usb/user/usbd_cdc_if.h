@@ -51,6 +51,9 @@
      } Transmission_Task_Args;
      
 /* Exported constants --------------------------------------------------------*/
+     extern QueueHandle_t receptionQueue;
+     extern QueueHandle_t transmissionQueue;
+
      extern Reception_Task_Args receptionTaskArgs;
      extern Transmission_Task_Args transmissionTaskArgs;
 
