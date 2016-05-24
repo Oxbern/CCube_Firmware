@@ -14,6 +14,7 @@
 #include "WM.h"
 
 #include "usbd_cdc.h"
+#include "usbd_cdc_if.h"
 #include "usb_device.h"
 #include "ltdc.h"
 #include "sdram.h"
@@ -42,6 +43,7 @@
 #include <stdbool.h>
 
 #define MAX_POINTS 9*9*9
+#define BUFFER_MAX_INDEX 64
 
 /*
  * Firmware Tasks
@@ -68,11 +70,20 @@ extern void StartGuiTask(void const * argument);
 osThreadId blinkTaskHandle;
 extern void StartBlinkTask(void const * argument);
 
-osThreadId CDC_controlTaskHandle;
-extern void StartCDCControlTask(void const * argument);
+osThreadId CDC_receptionTaskHandle;
+extern void StartCDCReceptionTask(void const * argument);
 
-osThreadId CDC_recoverDataTaskHandle;
-extern void StartRecoverTask(void const * argument);
+osThreadId CDC_transmissionTaskHandle;
+extern void StartCDCTransmissionTask(void const * argument);
+
+
+QueueHandle_t receptionQueue = 0;
+QueueHandle_t transmissionQueue = 0;
+
+Reception_Task_Args receptionTaskArgs;
+Transmission_Task_Args transmissionTaskArgs;
+    
+
 
 /**
  * FreeRTOS Initialisation function
@@ -107,12 +118,20 @@ void StartInitTask(void const * argument)
 	osThreadDef(blinkTask, StartBlinkTask, osPriorityNormal, 0, 8192);
 	blinkTaskHandle = osThreadCreate(osThread(blinkTask), NULL);
 
-	/* osThreadDef(cdcControlTask, StartCDCControlTask, osPriorityNormal, 0, 8192); */
-	/* CDC_controlTaskHandle = osThreadCreate(osThread(cdcControlTask), NULL); */
 
-	osThreadDef(cdcRecoverDataTask, StartRecoverTask, osPriorityNormal, 0, 8192);
-	CDC_recoverDataTaskHandle = osThreadCreate(osThread(cdcRecoverDataTask), NULL);
+	receptionQueue = xQueueCreate(10, BUFFER_MAX_INDEX*sizeof(uint8_t));
+	transmissionQueue = xQueueCreate(10, BUFFER_MAX_INDEX*sizeof(uint8_t));
 
+	receptionTaskArgs.receptionQueue = receptionQueue;
+	transmissionTaskArgs.transmissionQueue = transmissionQueue;
+	
+	osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityNormal, 0, 8192);
+	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask), NULL);
+
+	osThreadDef(cdcTransmissionTask, StartCDCTransmissionTask, osPriorityNormal, 0, 8192);
+	CDC_transmissionTaskHandle = osThreadCreate(osThread(cdcTransmissionTask), NULL);
+
+	
 	vTaskDelete(initTaskHandle);
 }
 

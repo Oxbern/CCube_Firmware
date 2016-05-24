@@ -39,9 +39,21 @@
 #endif
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc.h"
-
+#include "queue.h"
+     
 /* Exported types ------------------------------------------------------------*/
+     typedef struct _Reception_Task_Args {
+	 QueueHandle_t receptionQueue;
+     } Reception_Task_Args;
+
+     typedef struct _Transmission_Task_Args {
+	 QueueHandle_t transmissionQueue;
+     } Transmission_Task_Args;
+     
 /* Exported constants --------------------------------------------------------*/
+     extern Reception_Task_Args receptionTaskArgs;
+     extern Transmission_Task_Args transmissionTaskArgs;
+
 /* Exported cariables --------------------------------------------------------*/
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
 
