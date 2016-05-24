@@ -36,7 +36,7 @@
 #include "crc.h"
 #include "cmsis_os.h"
 
-#include <stdio.h>
+#include "stdio.h"
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
   * @{
@@ -353,6 +353,8 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     uint8_t result = USBD_OK;
     static uint8_t buff_RX[512];
     static uint8_t buff_TX[512];
+
+    /* printf("CDC_Received_FS called\n"); */
     
     if (Is_CMD_Known(buff_RX[1])) {
 	memcpy(buff_TX, CDC_Set_ACK(&buff_RX[0]), ACK_SIZE);
