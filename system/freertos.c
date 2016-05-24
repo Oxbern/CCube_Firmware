@@ -68,6 +68,12 @@ extern void StartGuiTask(void const * argument);
 osThreadId blinkTaskHandle;
 extern void StartBlinkTask(void const * argument);
 
+osThreadId CDC_controlTaskHandle;
+extern void StartCDCControlTask(void const * argument);
+
+osThreadId CDC_recoverDataTaskHandle;
+extern void StartRecoverTask(void const * argument);
+
 /**
  * FreeRTOS Initialisation function
  */
@@ -100,6 +106,12 @@ void StartInitTask(void const * argument)
 
 	osThreadDef(blinkTask, StartBlinkTask, osPriorityNormal, 0, 8192);
 	blinkTaskHandle = osThreadCreate(osThread(blinkTask), NULL);
+
+	/* osThreadDef(cdcControlTask, StartCDCControlTask, osPriorityNormal, 0, 8192); */
+	/* CDC_controlTaskHandle = osThreadCreate(osThread(cdcControlTask), NULL); */
+
+	osThreadDef(cdcRecoverDataTask, StartRecoverTask, osPriorityNormal, 0, 8192);
+	CDC_recoverDataTaskHandle = osThreadCreate(osThread(cdcRecoverDataTask), NULL);
 
 	vTaskDelete(initTaskHandle);
 }

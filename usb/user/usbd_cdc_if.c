@@ -104,6 +104,11 @@ uint16_t UserRxBufferFS_Current_Index;
 #define ACK_SIZE 6
 static uint8_t ACK[ACK_SIZE] = {0};
 
+typedef struct _Control_Args {
+    uint8_t cmd;
+    uint8_t *Buf;
+    uint16_t size;
+} Control_Args;
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -124,6 +129,8 @@ static int8_t CDC_Init_FS     (void);
 static int8_t CDC_DeInit_FS   (void);
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
+void StartCDCControlTask(void *argument);
+void StartRecoverTask(void *argument);
 
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS = 
 {
@@ -249,15 +256,14 @@ static void Set_ACKSend_NOK(uint8_t CMD, uint16_t size_buff, uint16_t crc) {
 
 }
 
-osThreadId controlTaskHandle;
-void StartControlTask(void const *args) {
-    
-}
+static uint8_t localBuffRX[512];
+static bool HANDLE_DATA_RECEIVED = false;
+static bool RECOVER_DATA = false;
 
 static uint8_t *CDC_Set_ACK(uint8_t *buff_RX) {
     static uint8_t Current_CMD = 0;
     static int16_t UserRxBufferFS_Expected_Size;
-
+    
     uint16_t buff_RX_Index = DATA_INDEX;
     uint16_t size_left_buff = (buff_RX[SIZE_INDEX + 1]
 			       + (buff_RX[SIZE_INDEX] << 8));
@@ -294,12 +300,37 @@ static uint8_t *CDC_Set_ACK(uint8_t *buff_RX) {
     
     Set_ACKSend_OK(Current_CMD, (buff_RX[SIZE_INDEX] << 8) + buff_RX[SIZE_INDEX], 0);
 
-    if (UserRxBufferFS_Current_Index >= UserRxBufferFS_Expected_Size) {
-    	CDC_Control_FS(Current_CMD, UserRxBufferFS, UserRxBufferFS_Current_Index*sizeof(uint8_t));
+    if (UserRxBufferFS_Current_Index >= 198) {
+	CDC_Control_FS(CDC_DISPLAY_CUBE, UserRxBufferFS, 200*sizeof(uint8_t));
     }
 
     return ACK;
 }
+
+void StartRecoverTask(void *argument) {
+
+    while (1) {
+	if (RECOVER_DATA) {
+	    RECOVER_DATA = false;
+	    CDC_Set_ACK(localBuffRX);
+	}
+
+	osDelay(1);
+    }
+}
+
+
+void StartCDCControlTask(void *argument){
+
+    while(1) {
+	if (HANDLE_DATA_RECEIVED == true) {
+	    HANDLE_DATA_RECEIVED = false;
+	    CDC_Control_FS(CDC_DISPLAY_CUBE, UserRxBufferFS, 200*sizeof(uint8_t));
+	}
+    	osDelay(1);
+    }
+}
+
 
 /**
   * @brief  CDC_Receive_FS
@@ -323,9 +354,6 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     static uint8_t buff_RX[512];
     static uint8_t buff_TX[512];
     
-    osThreadDef(controlTask, StartControlTask, osPriorityHigh, 0, 8192);
-    controlTaskHandle = osThreadCreate(osThread(controlTask), NULL);
-
     if (Is_CMD_Known(buff_RX[1])) {
 	memcpy(buff_TX, CDC_Set_ACK(&buff_RX[0]), ACK_SIZE);
 	*Len = ACK_SIZE;
