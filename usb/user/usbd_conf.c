@@ -86,7 +86,10 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* hpcd)
     __USB_OTG_FS_CLK_ENABLE();
 
     /* Peripheral interrupt init*/
-    HAL_NVIC_SetPriority(OTG_FS_IRQn, 2, 2);
+
+    /* Set priority to configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY
+       See FreeRTOSConfig.h:146 */
+    HAL_NVIC_SetPriority(OTG_FS_IRQn, 5, 5); 
     HAL_NVIC_EnableIRQ(OTG_FS_IRQn);
   /* USER CODE BEGIN USB_OTG_FS_MspInit 1 */
 
