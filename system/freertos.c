@@ -73,9 +73,6 @@ extern void StartBlinkTask(void const * argument);
 osThreadId CDC_receptionTaskHandle;
 extern void StartCDCReceptionTask(void const * argument);
 
-/* osThreadId CDC_transmissionTaskHandle; */
-/* extern void StartCDCTransmissionTask(void const * argument); */
-
 
 QueueHandle_t receptionQueue = 0;
 QueueHandle_t transmissionQueue = 0;    
@@ -114,22 +111,18 @@ void StartInitTask(void const * argument)
 	blinkTaskHandle = osThreadCreate(osThread(blinkTask), NULL);
 
 
-	receptionQueue = xQueueCreate(10, 64*sizeof(uint8_t));
+	receptionQueue = xQueueCreate(10, 512*sizeof(uint8_t));
 	if (receptionQueue == NULL) {
 		printf("Reception Queue was not created");
 	}
 
-	transmissionQueue = xQueueCreate(10, 64*sizeof(uint8_t));
+	transmissionQueue = xQueueCreate(10, 512*sizeof(uint8_t));
 	if (transmissionQueue == NULL) {
 		printf("Transmission Queue was not created");
 	}
 	
-	osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityNormal, 0, 8192);
+	osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityBelowNormal, 0, 8192);
 	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask), NULL);
-
-	/* osThreadDef(cdcTransmissionTask, StartCDCTransmissionTask, osPriorityNormal, 0, 8192); */
-	/* CDC_transmissionTaskHandle = osThreadCreate(osThread(cdcTransmissionTask), NULL); */
-
 	
 	vTaskDelete(initTaskHandle);
 }
