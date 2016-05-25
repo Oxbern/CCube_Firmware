@@ -78,11 +78,7 @@ extern void StartCDCTransmissionTask(void const * argument);
 
 
 QueueHandle_t receptionQueue = 0;
-QueueHandle_t transmissionQueue = 0;
-
-Reception_Task_Args receptionTaskArgs;
-Transmission_Task_Args transmissionTaskArgs;
-    
+QueueHandle_t transmissionQueue = 0;    
 
 /**
  * FreeRTOS Initialisation function
@@ -120,17 +116,12 @@ void StartInitTask(void const * argument)
 
 	receptionQueue = xQueueCreate(10, BUFFER_MAX_INDEX*sizeof(uint8_t));
 	transmissionQueue = xQueueCreate(10, BUFFER_MAX_INDEX*sizeof(uint8_t));
-
-	receptionTaskArgs.receptionQueue = receptionQueue;
-	transmissionTaskArgs.transmissionQueue = transmissionQueue;
 	
 	osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityNormal, 0, 8192);
-	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask),
-						 (void *)&receptionTaskArgs);
+	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask), NULL);
 
 	osThreadDef(cdcTransmissionTask, StartCDCTransmissionTask, osPriorityNormal, 0, 8192);
-	CDC_transmissionTaskHandle = osThreadCreate(osThread(cdcTransmissionTask),
-						    (void *)&transmissionTaskArgs);
+	CDC_transmissionTaskHandle = osThreadCreate(osThread(cdcTransmissionTask), NULL);
 
 	
 	vTaskDelete(initTaskHandle);
