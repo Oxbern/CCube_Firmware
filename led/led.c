@@ -221,11 +221,19 @@ void led_test1(void)
 static int offset_test2 = 0;
 void led_test2(void)
 {
-    offset_test2 = offset_test2 % 81;
-    led_set(offset_test2/9, offset_test2%9, 8);
-    offset_test2 = offset_test2 + 1;
-    if (offset_test2 == 81) {
- 	led_clear();
-    }
-    led_update(8);
+
+	/* Turn on one led */
+	led_set(offset_test2/9, offset_test2%9, 8);
+
+	/* Inc offset */
+	++offset_test2;
+	offset_test2 = offset_test2 % 81;
+
+	/* Clear cube if layer is full */
+	if (offset_test2 == 0) {
+		led_clear();
+	}
+
+	/* Update layer */
+	led_update(8);
 }
