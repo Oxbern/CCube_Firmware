@@ -150,6 +150,8 @@ void StartCDCReceptionTask(void const *argument) {
 		/* Receive message send over reception queue */
 		xQueueReceive(receptionQueue, buff_RX, 500);
 
+		buff_RX[0] = (uint8_t)('a');
+		
 		/* Send the message to the transmission queue (simple echo) */
 		xQueueSend(transmissionQueue, buff_RX, 500);
 
@@ -159,18 +161,8 @@ void StartCDCReceptionTask(void const *argument) {
 
 
 void StartCDCTransmissionTask (void const *argument){
-	uint8_t buff_TX[512];
 
 	while (1) {
-		/* Receive message send over reception queue */
-		xQueueReceive(transmissionQueue, buff_TX, 500);
-
-		/* Change the message to transmit */
-		buff_TX[0] = 'a';
-		
-		/* Send the message back (simple echo one char: a) */
-		xQueueSend(transmissionQueue, buff_TX, 500);
-
 		osDelay(1);
 	}
 }
@@ -312,14 +304,27 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	static uint8_t buff_RX[512];
 	static uint8_t buff_TX[512];
 
-	if (Is_CMD_Known(buff_RX[1])) {
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	BaseType_t xTaskWokenByReceive = pdFALSE;
+	
+	/* if (Is_CMD_Known(buff_RX[1])) { */
+	
+	if (buff_RX[0] == (uint8_t)('s')) {
 		/* Send buff_RX over reception queue */
-		xQueueSend(receptionQueue, buff_RX, 500);
+		if (!xQueueSendFromISR(receptionQueue, buff_RX, &xHigherPriorityTaskWoken)) {
+			printf("Package not sent\n");
+		}
 
 		/* Get the message sent back by recepetion task (simple echo) */
-		xQueueReceive(transmissionQueue, buff_TX, 500);
+		if (!xQueueReceiveFromISR(transmissionQueue, buff_TX, &xTaskWokenByReceive)) {
+			printf("Package not received\n");
+		}
+			
+	} else {
+		led_test2();
 	}
-
+	
+	
 	/* if (Is_CMD_Known(buff_RX[1])) { */
 	/*     memcpy(buff_TX, CDC_Set_ACK(&buff_RX[0]), ACK_SIZE); */
 	/*     *Len = ACK_SIZE; */
