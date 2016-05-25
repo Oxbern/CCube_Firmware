@@ -144,15 +144,14 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 
 /* Private functions ---------------------------------------------------------*/
 void StartCDCReceptionTask(void const *argument) {
-	Reception_Task_Args *args = (Reception_Task_Args *)argument; 
 	uint8_t buff_RX[512];
 	
 	while (1) {
 		/* Receive message send over reception queue */
-		xQueueReceive(args->receptionQueue, buff_RX, 500);
+		xQueueReceive(receptionQueue, buff_RX, 500);
 
-		/* Send the message back (simple echo) */
-		xQueueSend(args->receptionQueue, buff_RX, 500);
+		/* Send the message to the transmission queue (simple echo) */
+		xQueueSend(transmissionQueue, buff_RX, 500);
 
 		osDelay(1);
 	}
@@ -160,7 +159,18 @@ void StartCDCReceptionTask(void const *argument) {
 
 
 void StartCDCTransmissionTask (void const *argument){
+	uint8_t buff_TX[512];
+
 	while (1) {
+		/* Receive message send over reception queue */
+		xQueueReceive(transmissionQueue, buff_TX, 500);
+
+		/* Change the message to transmit */
+		buff_TX[0] = 'a';
+		
+		/* Send the message back (simple echo one char: a) */
+		xQueueSend(transmissionQueue, buff_TX, 500);
+
 		osDelay(1);
 	}
 }
@@ -302,12 +312,14 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	static uint8_t buff_RX[512];
 	static uint8_t buff_TX[512];
 
-	/* Send buff_RX over reception queue */
-	xQueueSend(receptionQueue, buff_RX, 500);
+	if (Is_CMD_Known(buff_RX[1])) {
+		/* Send buff_RX over reception queue */
+		xQueueSend(receptionQueue, buff_RX, 500);
 
-	/* Get the message sent back by recepetion task (simple echo) */
-	xQueueReceive(receptionQueue, buff_TX, 500);
-    
+		/* Get the message sent back by recepetion task (simple echo) */
+		xQueueReceive(transmissionQueue, buff_TX, 500);
+	}
+
 	/* if (Is_CMD_Known(buff_RX[1])) { */
 	/*     memcpy(buff_TX, CDC_Set_ACK(&buff_RX[0]), ACK_SIZE); */
 	/*     *Len = ACK_SIZE; */
@@ -344,8 +356,6 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 	/* USER CODE END 7 */ 
 	return result;
 }
-
-
 
 
 /* Helper */

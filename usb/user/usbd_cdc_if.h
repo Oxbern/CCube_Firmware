@@ -42,12 +42,10 @@
 #include "queue.h"
      
 /* Exported types ------------------------------------------------------------*/
-     typedef struct _Reception_Task_Args {
-	 QueueHandle_t receptionQueue;
+	 typedef struct _Reception_Task_Args {
      } Reception_Task_Args;
 
      typedef struct _Transmission_Task_Args {
-	 QueueHandle_t transmissionQueue;
      } Transmission_Task_Args;
      
 /* Exported constants --------------------------------------------------------*/
