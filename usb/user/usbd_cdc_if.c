@@ -144,16 +144,15 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 
 /* Private functions ---------------------------------------------------------*/
 void StartCDCReceptionTask(void const *argument) {
-	uint8_t buff_RX[512];
+	char *cIn;
+	char cOut; 
 	
 	while (1) {
 		/* Receive message send over reception queue */
-		xQueueReceive(receptionQueue, buff_RX, 500);
+		xQueueReceive(receptionQueue, &cIn, 500);
 
-		buff_RX[0] = (uint8_t)('a');
-		
 		/* Send the message to the transmission queue (simple echo) */
-		xQueueSend(transmissionQueue, buff_RX, 500);
+		xQueueSend(transmissionQueue, (void *)cIn, 500);
 
 		osDelay(1);
 	}
@@ -304,31 +303,25 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	static uint8_t buff_RX[512];
 	static uint8_t buff_TX[512];
 
+	char cIn;
+	char cOut;
+	
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 	BaseType_t xTaskWokenByReceive = pdFALSE;
-	
-	/* if (Is_CMD_Known(buff_RX[1])) { */
-	
-	if (buff_RX[0] == (uint8_t)('s')) {
-		/* Send buff_RX over reception queue */
-		if (!xQueueSendFromISR(receptionQueue, buff_RX, &xHigherPriorityTaskWoken)) {
-			printf("Package not sent\n");
-		}
 
-		/* Get the message sent back by recepetion task (simple echo) */
-		if (!xQueueReceiveFromISR(transmissionQueue, buff_TX, &xTaskWokenByReceive)) {
-			printf("Package not received\n");
-		}
-			
-	} else {
-		led_test2();
+	/* Switch on a led on top layer */
+	led_test2();
+	
+	/* Send buff_RX over reception queue */
+	cIn = (char)buff_RX[0];
+	if (xQueueSendFromISR(receptionQueue, &cIn, &xHigherPriorityTaskWoken) != pdPASS) {
+		printf("Unable to send message from ISR");
 	}
 	
+	/* Get the message sent back by recepetion task (simple echo) */
+	xQueueReceiveFromISR(transmissionQueue, (void *)&cOut, &xTaskWokenByReceive);
+	buff_TX[0] = (uint8_t)cOut;
 	
-	/* if (Is_CMD_Known(buff_RX[1])) { */
-	/*     memcpy(buff_TX, CDC_Set_ACK(&buff_RX[0]), ACK_SIZE); */
-	/*     *Len = ACK_SIZE; */
-	/* } */
     
 	USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);
 	USBD_CDC_TransmitPacket(hUsbDevice_0);
