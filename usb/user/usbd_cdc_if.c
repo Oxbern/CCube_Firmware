@@ -123,7 +123,7 @@ static int8_t CDC_DeInit_FS   (void);
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 void StartCDCReceptionTask(void const *argument);
-void StartCDCTransmissionTask(void const *argument);
+void StartCDCDisplayTask(void const *argument);
 
 /* Helpers */
 static bool Is_CMD_Known(uint8_t CMD);
@@ -185,7 +185,7 @@ void StartCDCReceptionTask(void const *argument) {
 				    && localBuffer_Current_Index > 0) {
 
 					/* Send the data into the transmission queue */
-					xQueueSend(transmissionQueue, &localBuffer[0], 10);
+					xQueueSend(displayQueue, &localBuffer[0], 10);
 
 					/* Set the index back to 0 */
 					localBuffer_Current_Index = 0;
@@ -196,18 +196,16 @@ void StartCDCReceptionTask(void const *argument) {
 			}
 
 		}
-		osDelay(1);
 	}
 }
 
-void StartCDCTransmissionTask(void const *argument) {
-	/* uint16_t Len = 1; */
+void StartCDCDisplayTask(void const *argument) {
 	
 	while (1) {
-		uint8_t buff_TX[512];
+		uint8_t localBuffer[512];
 	
 		/* Receive message send over transmission queue */
-		if (xQueueReceive(transmissionQueue, &buff_TX[0], 10) != pdTRUE){
+		if (xQueueReceive(displayQueue, &localBuffer[0], 10) != pdTRUE){
 			/* Handle error */
 		} else {
 
@@ -215,8 +213,8 @@ void StartCDCTransmissionTask(void const *argument) {
 
 			for (int i = 0; i < CUBE_WIDTH + 1; ++i) {
 				for (int j = 0; j < CUBE_WIDTH + 1; ++j) {
-					buffer_update(i, j, (buff_TX[k] << 8)
-					              + buff_TX[k+1]);
+					buffer_update(i, j, (localBuffer[k] << 8)
+					              + localBuffer[k+1]);
 					k += 2;
 				}
 			}
@@ -224,13 +222,7 @@ void StartCDCTransmissionTask(void const *argument) {
 			for (int l = 0; l < CUBE_WIDTH; ++l){
 				led_update(l);
 			}
-
-			/* /\* Send the buffer over USB *\/ */
-			/* USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], Len); */
-			/* USBD_CDC_TransmitPacket(hUsbDevice_0); */
 		}
-
-		osDelay(1);
 	}
 }
 

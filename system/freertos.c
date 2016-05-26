@@ -73,12 +73,12 @@ extern void StartBlinkTask(void const * argument);
 osThreadId CDC_receptionTaskHandle;
 extern void StartCDCReceptionTask(void const * argument);
 
-osThreadId CDC_transmissionTaskHandle;
-extern void StartCDCTransmissionTask(void const * argument);
+osThreadId CDC_displayTaskHandle;
+extern void StartCDCDisplayTask(void const * argument);
 
 
 QueueHandle_t receptionQueue = 0;
-QueueHandle_t transmissionQueue = 0;    
+QueueHandle_t displayQueue = 0;    
 
 /**
  * FreeRTOS Initialisation function
@@ -115,13 +115,13 @@ void StartInitTask(void const * argument)
 
 	receptionQueue = xQueueCreate(30, 512*sizeof(uint8_t));
 	
-	transmissionQueue = xQueueCreate(30, 512*sizeof(uint8_t));
+	displayQueue = xQueueCreate(30, 512*sizeof(uint8_t));
 
 	osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityNormal, 0, 8192);
 	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask), NULL);
 
-	osThreadDef(cdcTransmissionTask, StartCDCTransmissionTask, osPriorityNormal, 0, 8192);
-	CDC_transmissionTaskHandle = osThreadCreate(osThread(cdcTransmissionTask), NULL);
+	osThreadDef(cdcDisplayTask, StartCDCDisplayTask, osPriorityNormal, 0, 8192);
+	CDC_displayTaskHandle = osThreadCreate(osThread(cdcDisplayTask), NULL);
 
 	
 	vTaskDelete(initTaskHandle);

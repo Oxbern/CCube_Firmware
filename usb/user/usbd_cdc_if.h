@@ -44,7 +44,7 @@
 /* Exported types ------------------------------------------------------------*/     
 /* Exported constants --------------------------------------------------------*/
      extern QueueHandle_t receptionQueue;
-     extern QueueHandle_t transmissionQueue;
+     extern QueueHandle_t displayQueue;
 
 /* Exported cariables --------------------------------------------------------*/
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
