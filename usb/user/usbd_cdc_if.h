@@ -42,12 +42,9 @@
 #include "queue.h"
      
 /* Exported types ------------------------------------------------------------*/     
+	 
 /* Exported constants --------------------------------------------------------*/
 
-	 #define ACK_SIZE 9
-
-
-	 
 	 extern QueueHandle_t receptionQueue;
 	 extern QueueHandle_t ackQueue;
 	 extern QueueHandle_t displayQueue;
@@ -56,6 +53,9 @@
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
 
 /* Exported macro ------------------------------------------------------------*/
+
+#define ACK_SIZE 9
+	 
 /* Exported functions ------------------------------------------------------- */
 /** @defgroup USBD_CDC_IF_Exported_FunctionsPrototype
   * @{
