@@ -124,6 +124,7 @@ static int8_t CDC_DeInit_FS   (void);
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 void StartCDCReceptionTask(void const *argument);
+void StartCDCTransmissionTask(void const *argument);
 
 /* Helpers */
 static void Empty_UserRxBufferFS();
@@ -143,17 +144,41 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 
 /* Private functions ---------------------------------------------------------*/
 void StartCDCReceptionTask(void const *argument) {
-	char cIn;
+	uint8_t buff_RX[512];
+	static uint8_t buff_TX[512];
 	
 	while (1) {
 		/* Receive message send over reception queue */
-		if (xQueueReceive(receptionQueue, &cIn, 10) != pdTRUE){
+		if (xQueueReceive(receptionQueue, &buff_RX[0], 10) != pdTRUE){
 			/* Handle error */
-		}
+		} else {
 
-		/* Send the message to the transmission queue (simple echo) */
-		if (xQueueSend(transmissionQueue, &cIn, 10) != pdTRUE) {
+			for (int i = 0; i < 512; ++i) {
+				buff_TX[i] = buff_RX[i];
+			}
+			/* buff_TX[0] = 'a'; */
+			
+			/* Send a message to the transmission queue */
+			if (xQueueSend(transmissionQueue, &buff_TX[0], 10) != pdTRUE) {
+				/* Handle error */
+			}
+		}
+		osDelay(1);
+	}
+}
+
+void StartCDCTransmissionTask(void const *argument) {
+	uint16_t Len = 1;
+	static uint8_t buff_TX[512];
+	
+	while (1) {
+		/* Receive message send over transmission queue */
+		if (xQueueReceive(transmissionQueue, &buff_TX[0], 10) != pdTRUE){
 			/* Handle error */
+		} else {
+			/* Send the buffer over USB */
+			USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], Len);
+			USBD_CDC_TransmitPacket(hUsbDevice_0);
 		}
 
 		osDelay(1);
@@ -295,33 +320,19 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	/* USER CODE BEGIN 6 */
 	uint8_t result = USBD_OK;
 	static uint8_t buff_RX[512];
-	static uint8_t buff_TX[512];
 	
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	BaseType_t xTaskWokenByReceive = pdFALSE;
 	
-	for (int i = 0; i < 512; ++i) {
-		/* Send the message to the queue */
-		if (xQueueSendFromISR(receptionQueue, &buff_RX[i],
-		                      &xHigherPriorityTaskWoken) != pdTRUE) {
-			/* Handle error */
-		}
+	/* Send the message to the queue */
+	if (xQueueSendFromISR(receptionQueue, &buff_RX[0],
+	                      &xHigherPriorityTaskWoken) != pdTRUE) {
+		/* Handle error */
 	}
 	
 	/* Switch on a led on top layer */
 	led_test2();
 	
-	for (int i = 0; i < 512; ++i) {
-		/* Get the message from the queue (simple echo) */
-		if (xQueueReceiveFromISR(transmissionQueue,
-		                         &buff_TX[i], &xTaskWokenByReceive) != pdTRUE) {
-			/* Handle error */
-		}
-	}
-
-	USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], *Len);
-	USBD_CDC_TransmitPacket(hUsbDevice_0);
-	
+	/* Wait for another buffer to be received */
 	USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
 	USBD_CDC_ReceivePacket(hUsbDevice_0);
 
