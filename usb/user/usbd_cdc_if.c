@@ -101,7 +101,6 @@ uint16_t UserRxBufferFS_Current_Index;
 
 #define BEGINNING_DATA 0x01 
 
-#define ACK_SIZE 6
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -123,7 +122,10 @@ static int8_t CDC_DeInit_FS   (void);
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 void StartCDCReceptionTask(void const *argument);
+void StartCDCAckTransmissionTask(void const *argument);
 void StartCDCDisplayTask(void const *argument);
+
+
 
 /* Helpers */
 static bool Is_CMD_Known(uint8_t CMD);
@@ -198,6 +200,24 @@ void StartCDCReceptionTask(void const *argument) {
 		}
 	}
 }
+
+void StartCDCAckTransmissionTask(void const *argument) {
+
+	while (1) {
+		uint8_t ackBuff[ACK_SIZE];
+		
+		/* Receive message send over ack queue */
+		if (xQueueReceive(ackQueue, &ackBuff[0], 10) != pdTRUE){
+			/* Handle error */
+		} else {
+
+			/* Send the ACK over USB */
+			USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuff[0], ACK_SIZE);
+			USBD_CDC_TransmitPacket(hUsbDevice_0);			
+		}
+	}
+}
+
 
 void StartCDCDisplayTask(void const *argument) {
 	

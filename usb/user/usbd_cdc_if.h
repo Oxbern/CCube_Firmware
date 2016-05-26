@@ -43,8 +43,14 @@
      
 /* Exported types ------------------------------------------------------------*/     
 /* Exported constants --------------------------------------------------------*/
-     extern QueueHandle_t receptionQueue;
-     extern QueueHandle_t displayQueue;
+
+	 #define ACK_SIZE 9
+
+
+	 
+	 extern QueueHandle_t receptionQueue;
+	 extern QueueHandle_t ackQueue;
+	 extern QueueHandle_t displayQueue;
 
 /* Exported cariables --------------------------------------------------------*/
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;

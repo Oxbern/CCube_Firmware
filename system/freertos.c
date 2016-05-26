@@ -73,11 +73,15 @@ extern void StartBlinkTask(void const * argument);
 osThreadId CDC_receptionTaskHandle;
 extern void StartCDCReceptionTask(void const * argument);
 
+osThreadId CDC_ackTransmissionTaskHandle;
+extern void StartCDCAckTransmissionTask(void const * argument);
+
 osThreadId CDC_displayTaskHandle;
 extern void StartCDCDisplayTask(void const * argument);
 
 
 QueueHandle_t receptionQueue = 0;
+QueueHandle_t ackQueue = 0;    
 QueueHandle_t displayQueue = 0;    
 
 /**
@@ -117,8 +121,13 @@ void StartInitTask(void const * argument)
 	
 	displayQueue = xQueueCreate(30, 512*sizeof(uint8_t));
 
+	ackQueue = xQueueCreate(30, ACK_SIZE*sizeof(uint8_t));
+
 	osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityNormal, 0, 8192);
 	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask), NULL);
+
+	osThreadDef(cdcAckTransmissionTask, StartCDCAckTransmissionTask, osPriorityNormal, 0, 8192);
+	CDC_ackTransmissionTaskHandle = osThreadCreate(osThread(cdcAckTransmissionTask), NULL);
 
 	osThreadDef(cdcDisplayTask, StartCDCDisplayTask, osPriorityNormal, 0, 8192);
 	CDC_displayTaskHandle = osThreadCreate(osThread(cdcDisplayTask), NULL);
