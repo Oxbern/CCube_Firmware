@@ -113,9 +113,9 @@ void StartInitTask(void const * argument)
 	osThreadDef(blinkTask, StartBlinkTask, osPriorityNormal, 0, 8192);
 	blinkTaskHandle = osThreadCreate(osThread(blinkTask), NULL);
 
-	receptionQueue = xQueueCreate(5, 512*sizeof(uint8_t));
+	receptionQueue = xQueueCreate(30, 512*sizeof(uint8_t));
 	
-	transmissionQueue = xQueueCreate(5, 512*sizeof(uint8_t));
+	transmissionQueue = xQueueCreate(30, 512*sizeof(uint8_t));
 
 	osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityBelowNormal, 0, 8192);
 	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask), NULL);
