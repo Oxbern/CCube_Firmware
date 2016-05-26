@@ -94,13 +94,18 @@ uint16_t UserRxBufferFS_Current_Index;
 
 /* Received Buffer Index */
 #define BEGINNING_INDEX 0 
-#define CMD_INDEX 1
-#define SIZE_INDEX 2
+#define ID_INDEX 1
+#define CMD_INDEX 2
+#define SIZE_INDEX 3
 #define DATA_INDEX 4
 #define CRC_INDEX 62
 
 #define BEGINNING_DATA 0x01 
 
+/* Macro to define ACK (OK, ERR or NOK) */
+#define ACK_OK(IdDevice, AckType, SizeLeft, CmdBuff, SizeBuff)    \
+	{1, (IdDevice), (AckType), (SizeLeft >> 8),                   \
+			(SizeLeft & 0xFF), CmdBuff, (SizeBuff >> 8), (SizeBuff & 0xFF)}
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -145,20 +150,38 @@ void StartCDCReceptionTask(void const *argument) {
 	uint8_t localBuffer[512];
 	uint16_t localBuffer_Current_Index;
 	uint16_t localBuffer_Bytes_To_Be_Received;
+
+	/* uint8_t Current_CMD; */
 	
 	while (1) {
-		/* uint8_t buff_TX[512] = {0}; */
+
 		uint8_t buff_RX[512] = {0};
 		uint16_t buff_RX_Index = DATA_INDEX;
-	
+		
 		/* Receive message send over reception queue */
 		if (xQueueReceive(receptionQueue, &buff_RX[0], 10) != pdTRUE){
 			/* Handle error */
 		} else {
-			
-			/* Handle formatted buffer only */
+
+ 			/* Handle formatted buffer only */
 			if (Is_CMD_Known(buff_RX[CMD_INDEX])) {
-									
+
+				uint16_t computedCRC = computeCRC(&buff_RX[DATA_INDEX],
+				                                  CRC_INDEX*sizeof(uint8_t));
+
+				uint16_t buffCRC = (buff_RX[CRC_INDEX] << 8)
+					+ buff_RX[CRC_INDEX + 1];
+
+				
+
+				if (computedCRC != buffCRC) {
+					/* Send ACK_ERR */
+					/* TODO */
+				}
+
+				uint16_t buffSize = (buff_RX[SIZE_INDEX] << 8) + buff_RX[SIZE_INDEX + 1];
+				uint8_t buffCMD = buff_RX[CMD_INDEX];
+				
 				if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
 
 					/* Clear local buffer */
@@ -173,6 +196,16 @@ void StartCDCReceptionTask(void const *argument) {
 					localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
 						+ (buff_RX[SIZE_INDEX] << 8);
 				}
+				
+				/* Send ACK_OK */
+				uint8_t ACK_OK[9] = ACK_OK(buff_RX[ID_INDEX], buff_RX[CMD_INDEX],
+				                           ACK_SIZE, buffCMD, buffSize);
+
+				uint16_t ackCRC = computeCRC(&ACK_OK[0], ACK_SIZE - 2);
+				ACK_OK[7] = ackCRC >> 8; ACK_OK[8] = ackCRC & 0xFF;
+
+				xQueueSend(ackQueue, &ACK_OK[0], 10);
+
 				
 				while (buff_RX_Index < CRC_INDEX
 				       && localBuffer_Bytes_To_Be_Received > 0) {
