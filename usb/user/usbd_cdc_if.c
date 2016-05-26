@@ -101,9 +101,7 @@ uint16_t UserRxBufferFS_Current_Index;
 
 #define BEGINNING_DATA 0x01 
 
-/* Size of ACK buffers */
 #define ACK_SIZE 6
-static uint8_t ACK[ACK_SIZE] = {0};
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -123,17 +121,12 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 static int8_t CDC_Init_FS     (void);
 static int8_t CDC_DeInit_FS   (void);
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
-static uint8_t *CDC_Set_ACK(uint8_t *buff_RX);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 void StartCDCReceptionTask(void const *argument);
 void StartCDCTransmissionTask(void const *argument);
 
 /* Helpers */
-static void Empty_UserRxBufferFS();
 static bool Is_CMD_Known(uint8_t CMD);
-static void Set_ACKSend_OK(uint8_t CMD, uint16_t size_buff, uint16_t crc);
-static void Set_ACKSend_ERR(uint8_t CMD, uint16_t size_buff, uint16_t crc);
-static void Set_ACKSend_NOK(uint8_t CMD, uint16_t size_buff, uint16_t crc);
 
 
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS = 
@@ -148,6 +141,13 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 void StartCDCReceptionTask(void const *argument) {
 	static uint8_t buff_RX[512];
 	static uint8_t buff_TX[512];
+
+	static uint8_t localBuffer[512];
+	static int16_t localBuffer_Current_Index;
+	static int16_t localBuffer_Bytes_To_Be_Received;
+	
+    
+	uint16_t buff_RX_Index = DATA_INDEX;
 	
 	while (1) {
 		/* Receive message send over reception queue */
@@ -155,8 +155,34 @@ void StartCDCReceptionTask(void const *argument) {
 			/* Handle error */
 		} else {
 
+			/* Handle formatted buffer only */
 			if (Is_CMD_Known(buff_RX[CMD_INDEX])) {
-				memcpy(&buff_TX[0], CDC_Set_ACK(&buff_RX[0]), ACK_SIZE);
+				/* Useless test */
+				led_test1();
+
+				if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
+					/* Reset local buffer */
+					for (int i = 0; i < 512; ++i) {
+						localBuffer[i] = 0;
+					}
+
+					localBuffer_Current_Index = 0;
+					
+					localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
+						+ (buff_RX[SIZE_INDEX] << 8);
+				}
+
+				
+				while (buff_RX_Index < CRC_INDEX) {
+					localBuffer[localBuffer_Current_Index++] = buff_RX[buff_RX_Index++];
+					--localBuffer_Bytes_To_Be_Received;
+				}
+
+				/* if (localBuffer_Bytes_To_Be_Received <= 0) { */
+				/* 	CDC_Control_FS(CDC_DISPLAY_CUBE, &localBuffer[0], */
+				/* 	               200*sizeof(uint8_t)); */
+				/* } */
+
 			}
 
 			/* for (int i = 0; i < 512; ++i) { */
@@ -173,7 +199,7 @@ void StartCDCReceptionTask(void const *argument) {
 }
 
 void StartCDCTransmissionTask(void const *argument) {
-	uint16_t Len = ACK_SIZE;
+	uint16_t Len = 512;
 	static uint8_t buff_TX[512];
 	
 	while (1) {
@@ -254,55 +280,8 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 
 	return (USBD_OK);
 	/* USER CODE END 5 */
-}
+}		
 
-
-static uint8_t *CDC_Set_ACK(uint8_t *buff_RX) {
-	static uint8_t Current_CMD = 0;
-	static int16_t UserRxBufferFS_Expected_Size;
-    
-	uint16_t buff_RX_Index = DATA_INDEX;
-	uint16_t size_left_buff = (buff_RX[SIZE_INDEX + 1]
-	                           + (buff_RX[SIZE_INDEX] << 8));
-
-	/* Checks if a buffer was lost */
-	if (buff_RX[BEGINNING_INDEX] != BEGINNING_DATA) {
-		if (size_left_buff != UserRxBufferFS_Expected_Size) {
-			Set_ACKSend_NOK(Current_CMD,
-			                UserRxBufferFS_Expected_Size, 0);
-			return ACK;
-		} else if (Current_CMD != buff_RX[CMD_INDEX]) {
-			Set_ACKSend_NOK(Current_CMD,
-			                UserRxBufferFS_Expected_Size, 0);
-			return ACK;
-		}
-	}
-    
-	if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
-		if (UserRxBufferFS_Expected_Size > 0) {
-			Set_ACKSend_NOK(Current_CMD,
-			                size_left_buff, 0);
-			return ACK;
-		} else {
-			Current_CMD = buff_RX[CMD_INDEX];
-			Empty_UserRxBufferFS();
-			UserRxBufferFS_Expected_Size = buff_RX[SIZE_INDEX + 1] + (buff_RX[SIZE_INDEX] << 8);
-		}
-	}
-    
-	while (buff_RX_Index < CRC_INDEX) {
-		UserRxBufferFS[UserRxBufferFS_Current_Index++] = buff_RX[buff_RX_Index++];
-		--UserRxBufferFS_Expected_Size;
-	}
-    
-	Set_ACKSend_OK(Current_CMD, (buff_RX[SIZE_INDEX] << 8) + buff_RX[SIZE_INDEX], 0);
-
-	if (UserRxBufferFS_Current_Index >= 198) {
-		CDC_Control_FS(CDC_DISPLAY_CUBE, UserRxBufferFS, 200*sizeof(uint8_t));
-	}
-
-	return ACK;
-}
 
 
 /**
@@ -369,52 +348,12 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 
 
 /* Helper */
-static void Empty_UserRxBufferFS() {
-	for (int i = 0; i < APP_RX_DATA_SIZE; ++i) {
-		UserRxBufferFS[i] = 0;
-	}
-	UserRxBufferFS_Current_Index = 0;
-}
-
 static bool Is_CMD_Known(uint8_t CMD) {
 	if (CMD == CDC_DISPLAY_CUBE){
 		return true;
 	}
 
 	return false;
-}
-
-static void Set_ACKSend_OK(uint8_t CMD, uint16_t size_buff, uint16_t crc) {
-    
-	ACK[0] = CDC_SEND_ACK_OK;
-	ACK[1] = CMD;
-	ACK[2] = size_buff >> 8;
-	ACK[3] = size_buff & 0xFF;
-	ACK[4] = crc >> 8;
-	ACK[5] = crc & 0xFF;
-
-}
-
-static void Set_ACKSend_ERR(uint8_t CMD, uint16_t size_buff, uint16_t crc) {
-
-	ACK[0] = CDC_SEND_ACK_ERR;
-	ACK[1] = CMD;
-	ACK[2] = size_buff >> 8;
-	ACK[3] = size_buff & 0xFF;
-	ACK[4] = crc >> 8;
-	ACK[5] = crc & 0xFF;
-    
-}
-
-static void Set_ACKSend_NOK(uint8_t CMD, uint16_t size_buff, uint16_t crc) {
-
-	ACK[0] = CDC_SEND_ACK_NOK;
-	ACK[1] = CMD;
-	ACK[2] = size_buff >> 8;
-	ACK[3] = size_buff & 0xFF;
-	ACK[4] = crc >> 8;
-	ACK[5] = crc & 0xFF;
-
 }
 
 
