@@ -35,6 +35,7 @@
 #include "./../../led/led.h"
 #include "crc.h"
 #include "cmsis_os.h"
+#include "string.h"
 
 #include "stdio.h"
 
@@ -122,6 +123,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 static int8_t CDC_Init_FS     (void);
 static int8_t CDC_DeInit_FS   (void);
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
+static uint8_t *CDC_Set_ACK(uint8_t *buff_RX);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 void StartCDCReceptionTask(void const *argument);
 void StartCDCTransmissionTask(void const *argument);
@@ -144,7 +146,7 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 
 /* Private functions ---------------------------------------------------------*/
 void StartCDCReceptionTask(void const *argument) {
-	uint8_t buff_RX[512];
+	static uint8_t buff_RX[512];
 	static uint8_t buff_TX[512];
 	
 	while (1) {
@@ -153,10 +155,13 @@ void StartCDCReceptionTask(void const *argument) {
 			/* Handle error */
 		} else {
 
-			for (int i = 0; i < 512; ++i) {
-				buff_TX[i] = buff_RX[i];
+			if (Is_CMD_Known(buff_RX[CMD_INDEX])) {
+				memcpy(&buff_TX[0], CDC_Set_ACK(&buff_RX[0]), ACK_SIZE);
 			}
-			/* buff_TX[0] = 'a'; */
+
+			/* for (int i = 0; i < 512; ++i) { */
+			/* 	buff_TX[i] = buff_RX[i]; */
+			/* } */
 			
 			/* Send a message to the transmission queue */
 			if (xQueueSend(transmissionQueue, &buff_TX[0], 10) != pdTRUE) {
@@ -168,7 +173,7 @@ void StartCDCReceptionTask(void const *argument) {
 }
 
 void StartCDCTransmissionTask(void const *argument) {
-	uint16_t Len = 1;
+	uint16_t Len = ACK_SIZE;
 	static uint8_t buff_TX[512];
 	
 	while (1) {
