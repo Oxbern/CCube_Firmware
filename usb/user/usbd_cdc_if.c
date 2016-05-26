@@ -139,17 +139,16 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 
 /* Private functions ---------------------------------------------------------*/
 void StartCDCReceptionTask(void const *argument) {
-	uint8_t buff_TX[512];
-
-	uint8_t buff_RX[512];
-	uint16_t buff_RX_Index = DATA_INDEX;
-
-	static uint8_t localBuffer[512];
-	static int16_t localBuffer_Current_Index;
-	static int16_t localBuffer_Bytes_To_Be_Received;
+	
+	uint8_t localBuffer[512];
+	uint16_t localBuffer_Current_Index;
+	uint16_t localBuffer_Bytes_To_Be_Received;
 	
 	while (1) {
-
+		/* uint8_t buff_TX[512] = {0}; */
+		uint8_t buff_RX[512] = {0};
+		uint16_t buff_RX_Index = DATA_INDEX;
+	
 		/* Receive message send over reception queue */
 		if (xQueueReceive(receptionQueue, &buff_RX[0], 10) != pdTRUE){
 			/* Handle error */
@@ -159,54 +158,54 @@ void StartCDCReceptionTask(void const *argument) {
 			if (Is_CMD_Known(buff_RX[CMD_INDEX])) {
 									
 				if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
-					/* Reset local buffer */
+
+					/* Clear local buffer */
 					for (int i = 0; i < 512; ++i) {
 						localBuffer[i] = 0;
 					}
 
+					/* Set the index of local buffer to 0 */
 					localBuffer_Current_Index = 0;
-					
+
+					/* Retrieve number of bytes to be received */
 					localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
 						+ (buff_RX[SIZE_INDEX] << 8);
 				}
 				
-				while (buff_RX_Index < CRC_INDEX) {
+				while (buff_RX_Index < CRC_INDEX
+				       && localBuffer_Bytes_To_Be_Received > 0) {
 					/* Copy value in local buffer */
-					localBuffer[localBuffer_Current_Index] = buff_RX[buff_RX_Index];
+					localBuffer[localBuffer_Current_Index++] = buff_RX[buff_RX_Index++];
 
-					/* Update control variables */
-					localBuffer_Current_Index++;
-					buff_RX_Index++;
+					/* Update control variable */
 					localBuffer_Bytes_To_Be_Received--;
 				}
 
-				if (localBuffer_Current_Index > 190) {
+				if (localBuffer_Bytes_To_Be_Received == 0
+				    && localBuffer_Current_Index > 0) {
+
 					/* Send the data into the transmission queue */
 					xQueueSend(transmissionQueue, &localBuffer[0], 10);
 
 					/* Set the index back to 0 */
 					localBuffer_Current_Index = 0;
+					
+					/* Wait for another buffer before sending a message to update task */
+					localBuffer_Bytes_To_Be_Received = 1;
 				}
 			}
 
-			/* for (int i = 0; i < 512; ++i) { */
-			/* 	buff_TX[i] = buff_RX[i]; */
-			/* } */
-			
-			/* Send a message to the transmission queue */
-			if (xQueueSend(transmissionQueue, &buff_TX[0], 100) != pdTRUE) {
-				/* Handle error */
-			}
 		}
 		osDelay(1);
 	}
 }
 
 void StartCDCTransmissionTask(void const *argument) {
-	uint16_t Len = 1;
-	static uint8_t buff_TX[512];
+	/* uint16_t Len = 1; */
 	
 	while (1) {
+		uint8_t buff_TX[512];
+	
 		/* Receive message send over transmission queue */
 		if (xQueueReceive(transmissionQueue, &buff_TX[0], 10) != pdTRUE){
 			/* Handle error */
@@ -226,7 +225,6 @@ void StartCDCTransmissionTask(void const *argument) {
 				led_update(l);
 			}
 
-			
 			/* /\* Send the buffer over USB *\/ */
 			/* USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], Len); */
 			/* USBD_CDC_TransmitPacket(hUsbDevice_0); */
