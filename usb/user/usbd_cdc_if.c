@@ -94,16 +94,21 @@ uint16_t UserRxBufferFS_Current_Index;
 
 /* Received Buffer Index */
 #define BEGINNING_INDEX 0 
-#define ID_INDEX 1
-#define CMD_INDEX 2
-#define SIZE_INDEX 3
+#define ID_INDEX 0
+#define CMD_INDEX 1
+#define SIZE_INDEX 2
 #define DATA_INDEX 4
 #define CRC_INDEX 62
 
 #define BEGINNING_DATA 0x01 
 
+/* ACK opCode */
+#define ACK_OK 0x20
+#define ACK_ERR 0x21
+#define ACK_NOK 0x22
+
 /* Macro to define ACK (OK, ERR or NOK) */
-#define ACK_OK(IdDevice, AckType, SizeLeft, CmdBuff, SizeBuff)    \
+#define ACK(IdDevice, AckType, SizeLeft, CmdBuff, SizeBuff)    \
 	{1, (IdDevice), (AckType), (SizeLeft >> 8),                   \
 			(SizeLeft & 0xFF), CmdBuff, (SizeBuff >> 8), (SizeBuff & 0xFF)}
 
@@ -198,13 +203,13 @@ void StartCDCReceptionTask(void const *argument) {
 				}
 				
 				/* Send ACK_OK */
-				uint8_t ACK_OK[9] = ACK_OK(buff_RX[ID_INDEX], buff_RX[CMD_INDEX],
-				                           ACK_SIZE, buffCMD, buffSize);
+				uint8_t ackBuf[9] = ACK(buff_RX[ID_INDEX], ACK_OK,
+				                        ACK_SIZE, buffCMD, buffSize);
 
-				uint16_t ackCRC = computeCRC(&ACK_OK[0], ACK_SIZE - 2);
-				ACK_OK[7] = ackCRC >> 8; ACK_OK[8] = ackCRC & 0xFF;
+				uint16_t ackCRC = computeCRC(&ackBuf[0], ACK_SIZE - 2);
+				ackBuf[7] = ackCRC >> 8; ackBuf[8] = ackCRC & 0xFF;
 
-				xQueueSend(ackQueue, &ACK_OK[0], 10);
+				xQueueSend(ackQueue, &ackBuf[0], 10);
 
 				
 				while (buff_RX_Index < CRC_INDEX
