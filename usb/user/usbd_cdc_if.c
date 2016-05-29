@@ -92,12 +92,13 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 uint16_t UserRxBufferFS_Current_Index;
 
+
 /* Received Buffer Index */
 #define BEGINNING_INDEX 0 
-#define ID_INDEX 0
-#define CMD_INDEX 1
-#define SIZE_INDEX 2
-#define DATA_INDEX 4
+#define ID_INDEX (BEGINNING_INDEX + 1)
+#define CMD_INDEX (ID_INDEX + 1)
+#define SIZE_INDEX (CMD_INDEX + 1)
+#define DATA_INDEX (SIZE_INDEX + 2)
 #define CRC_INDEX 62
 
 #define BEGINNING_DATA 0x01 
@@ -108,9 +109,9 @@ uint16_t UserRxBufferFS_Current_Index;
 #define ACK_NOK 0x22
 
 /* Macro to define ACK (OK, ERR or NOK) */
-#define ACK(IdDevice, AckType, SizeLeft, CmdBuff, SizeBuff)    \
-	{1, (IdDevice), (AckType), (SizeLeft >> 8),                   \
-			(SizeLeft & 0xFF), CmdBuff, (SizeBuff >> 8), (SizeBuff & 0xFF)}
+#define ACK(IdDevice, AckType, CmdBuff, SizeBuff)    \
+	{1, (IdDevice), (AckType), 0, 3, CmdBuff,                  \
+			(SizeBuff >> 8), (SizeBuff & 0xFF)}
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -150,6 +151,14 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 };
 
 /* Private functions ---------------------------------------------------------*/
+
+/**
+ * @brief  StartCDCReceptionTask
+ *         Recovers data and store them into a localBuffer
+ *         When full, sends data to the controller
+ * @param argument: Default argument for task (NULL here)
+ */
+
 void StartCDCReceptionTask(void const *argument) {
 	
 	uint8_t localBuffer[512];
@@ -171,22 +180,6 @@ void StartCDCReceptionTask(void const *argument) {
  			/* Handle formatted buffer only */
 			if (Is_CMD_Known(buff_RX[CMD_INDEX])) {
 
-				uint16_t computedCRC = computeCRC(&buff_RX[DATA_INDEX],
-				                                  CRC_INDEX*sizeof(uint8_t));
-
-				uint16_t buffCRC = (buff_RX[CRC_INDEX] << 8)
-					+ buff_RX[CRC_INDEX + 1];
-
-				
-
-				if (computedCRC != buffCRC) {
-					/* Send ACK_ERR */
-					/* TODO */
-				}
-
-				uint16_t buffSize = (buff_RX[SIZE_INDEX] << 8) + buff_RX[SIZE_INDEX + 1];
-				uint8_t buffCMD = buff_RX[CMD_INDEX];
-				
 				if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
 
 					/* Clear local buffer */
@@ -202,15 +195,6 @@ void StartCDCReceptionTask(void const *argument) {
 						+ (buff_RX[SIZE_INDEX] << 8);
 				}
 				
-				/* Send ACK_OK */
-				uint8_t ackBuf[9] = ACK(buff_RX[ID_INDEX], ACK_OK,
-				                        ACK_SIZE, buffCMD, buffSize);
-
-				uint16_t ackCRC = computeCRC(&ackBuf[0], ACK_SIZE - 2);
-				ackBuf[7] = ackCRC >> 8; ackBuf[8] = ackCRC & 0xFF;
-
-				xQueueSend(ackQueue, &ackBuf[0], 10);
-
 				
 				while (buff_RX_Index < CRC_INDEX
 				       && localBuffer_Bytes_To_Be_Received > 0) {
@@ -232,57 +216,123 @@ void StartCDCReceptionTask(void const *argument) {
 					
 					/* Wait for another buffer before sending a message to update task */
 					localBuffer_Bytes_To_Be_Received = 1;
-				}
-			}
+				} 
+				
+			} /* End of if statement (Is_CMD_Known) */
+			
+		} /* End of else statement (buffer was received) */
+		
+	} /* End of infinite loop */
+	
+} /* End of reception task */
 
-		}
-	}
-}
-
+/**
+ * @brief  StartCDCAckTransmissionTask
+ *         Recovers data over ack queue (sent by CDC_Receive_FS)
+ *         And sends ack back over USB connection
+ * @param  argument: default argument for task (NULL here)
+ */
 void StartCDCAckTransmissionTask(void const *argument) {
 
 	while (1) {
-		uint8_t ackBuff[ACK_SIZE];
+		uint8_t transmitBuffer[512];
+
+		uint8_t Current_CMD = 0;
+		uint16_t Current_Size_Left = 0;
 		
 		/* Receive message send over ack queue */
-		if (xQueueReceive(ackQueue, &ackBuff[0], 10) != pdTRUE){
+		if (xQueueReceive(ackQueue, &transmitBuffer[0], 10) != pdTRUE){
 			/* Handle error */
-		} else {
+		} else {			
 
-			/* Send the ACK over USB */
-			USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuff[0], ACK_SIZE);
-			USBD_CDC_TransmitPacket(hUsbDevice_0);			
-		}
-	}
-}
+			if (Is_CMD_Known(transmitBuffer[CMD_INDEX])) {
 
+				if (transmitBuffer[BEGINNING_INDEX] == BEGINNING_DATA) {
+					if (Current_Size_Left) {
+						uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_NOK,
+						                                  Current_CMD, Current_Size_Left);
 
+						/* send the ACK over USB */
+						USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
+						USBD_CDC_TransmitPacket(hUsbDevice_0);
+						/* Wait for another buffer */
+						continue;
+					
+					} else {
+						Current_CMD = transmitBuffer[CMD_INDEX];
+						Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
+							+ transmitBuffer[SIZE_INDEX];
+					}
+				}
+			
+				if (xQueueSend(receptionQueue, &transmitBuffer[0], 10) != pdTRUE) {
+					/* Handle error */
+				}
+
+				uint8_t ackBuffer[ACK_SIZE] = {0};
+
+				/* send the ACK over USB */
+				USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
+				USBD_CDC_TransmitPacket(hUsbDevice_0);
+
+			} else {
+				/* Simple echo */
+				USBD_CDC_SetTxBuffer(hUsbDevice_0, &transmitBuffer[0], 1);
+				USBD_CDC_TransmitPacket(hUsbDevice_0);
+			}
+			
+		} /* End of else statement (buffer received) */
+
+	} /* End of infinite loop */
+	
+} /* End of ACK transmission task */
+
+/**
+ * @brief  StartCDCDisplayTask
+ *         Converts data received over USB in shapes on the cube
+ * @param  argument: default argument for task (NULL here)
+ */
 void StartCDCDisplayTask(void const *argument) {
 	
 	while (1) {
-		uint8_t localBuffer[512];
+		uint8_t localBuffer[512] = {0};
 	
 		/* Receive message send over transmission queue */
 		if (xQueueReceive(displayQueue, &localBuffer[0], 10) != pdTRUE){
 			/* Handle error */
 		} else {
 
-			int k = 0;
+			bool actualBit;
+			uint8_t x = 0, y = 0, z = 0;
+			
+			/* Local buffer has 92B of data (usefull)*/
+			for (int i = 0; i < 92; ++i) {
+				for (int j = 0; j < 8; ++j) {
+					actualBit = localBuffer[i] & (1 << (7 - j));
+					led_set_state(x, y, z, actualBit);
 
-			for (int i = 0; i < CUBE_WIDTH + 1; ++i) {
-				for (int j = 0; j < CUBE_WIDTH + 1; ++j) {
-					buffer_update(i, j, (localBuffer[k] << 8)
-					              + localBuffer[k+1]);
-					k += 2;
+					z = (z + 1) % 9;
+					if (z == 0) {
+						y = (y + 1) % 9;
+						if (y == 0) {
+							x = (x + 1) % 9;
+							if (x == 0) {
+								i = 92;
+								j = 8;
+							}
+						}
+					}
 				}
 			}
-	
+			
 			for (int l = 0; l < CUBE_WIDTH; ++l){
 				led_update(l);
 			}
 		}
-	}
-}
+
+	}	/* End of infinite loop */
+
+}		/* End of display task */
 
 
 /**
@@ -371,24 +421,21 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
 	/* USER CODE BEGIN 6 */
 	uint8_t result = USBD_OK;
-	static uint8_t buff_RX[512];
+	uint8_t buff_RX[512];
 	
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	
+
+	memcpy(&buff_RX, Buf, 512);
+		
 	/* Send the message to the queue */
-	if (xQueueSendFromISR(receptionQueue, &buff_RX[0],
+	if (xQueueSendFromISR(ackQueue, &buff_RX,
 	                      &xHigherPriorityTaskWoken) != pdTRUE) {
 		/* Handle error */
 	}
-		
+	
 	/* Wait for another buffer to be received */
-	USBD_CDC_SetRxBuffer(hUsbDevice_0, &buff_RX[0]);
 	USBD_CDC_ReceivePacket(hUsbDevice_0);
-
-	/* /\* Send the buffer over USB *\/ */
-	/* USBD_CDC_SetTxBuffer(hUsbDevice_0, &buff_TX[0], Len); */
-	/* USBD_CDC_TransmitPacket(hUsbDevice_0); */
-
+	
 	return (result);
 	/* USER CODE END 6 */ 
 }
