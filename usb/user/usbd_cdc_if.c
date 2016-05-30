@@ -261,7 +261,7 @@ void StartCDCAckTransmissionTask(void const *argument) {
 					} else {
 						Current_CMD = transmitBuffer[CMD_INDEX];
 						Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
-							+ transmitBuffer[SIZE_INDEX];
+							+ transmitBuffer[SIZE_INDEX + 1];
 					}
 				}
 			
@@ -269,7 +269,7 @@ void StartCDCAckTransmissionTask(void const *argument) {
 					/* Handle error */
 				}
 
-				uint8_t ackBuffer[ACK_SIZE] = {0};
+				uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_OK, Current_CMD, Current_Size_Left);
 
 				/* send the ACK over USB */
 				USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
