@@ -93,6 +93,8 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 uint16_t UserRxBufferFS_Current_Index;
 
 
+#define MyID 1
+
 /* Received Buffer Index */
 #define BEGINNING_INDEX 0 
 #define ID_INDEX (BEGINNING_INDEX + 1)
@@ -109,7 +111,7 @@ uint16_t UserRxBufferFS_Current_Index;
 #define ACK_NOK 0x22
 
 /* Macro to define ACK (OK, ERR or NOK) */
-#define ACK(IdDevice, AckType, CmdBuff, SizeBuff)    \
+#define ACK(IdDevice, AckType, CmdBuff, SizeBuff)              \
 	{1, (IdDevice), (AckType), 0, 3, CmdBuff,                  \
 			(SizeBuff >> 8), (SizeBuff & 0xFF)}
 
@@ -234,20 +236,25 @@ void StartCDCReceptionTask(void const *argument) {
  */
 void StartCDCAckTransmissionTask(void const *argument) {
 
-	while (1) {
-		uint8_t transmitBuffer[512];
+	uint8_t Current_CMD = 0;
+	uint16_t Current_Size_Left = 0;
 
-		uint8_t Current_CMD = 0;
-		uint16_t Current_Size_Left = 0;
+	while (1) {
+		
+		uint8_t transmitBuffer[512];
 		
 		/* Receive message send over ack queue */
 		if (xQueueReceive(ackQueue, &transmitBuffer[0], 10) != pdTRUE){
 			/* Handle error */
 		} else {			
 
-			if (Is_CMD_Known(transmitBuffer[CMD_INDEX])) {
+			/* Check if CMD is known */
+			if (Is_CMD_Known(transmitBuffer[CMD_INDEX]) &&
+			    transmitBuffer[ID_INDEX] == MyID) {
 
 				if (transmitBuffer[BEGINNING_INDEX] == BEGINNING_DATA) {
+
+					/* Check if buffer are missing */
 					if (Current_Size_Left) {
 						uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_NOK,
 						                                  Current_CMD, Current_Size_Left);
@@ -257,25 +264,65 @@ void StartCDCAckTransmissionTask(void const *argument) {
 						USBD_CDC_TransmitPacket(hUsbDevice_0);
 						/* Wait for another buffer */
 						continue;
-					
-					} else {
-						Current_CMD = transmitBuffer[CMD_INDEX];
-						Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
-							+ transmitBuffer[SIZE_INDEX + 1];
 					}
+					
+					/* New message: Current _Size_Left == 0 */
+					Current_CMD = transmitBuffer[CMD_INDEX];
+					Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
+						+ transmitBuffer[SIZE_INDEX + 1];
 				}
-			
+
+
+				/* Check if CRCs match */
+				uint16_t computedCRC = computeCRC(&transmitBuffer[0],
+				                                  62*sizeof(uint8_t));
+				uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8)
+					+ transmitBuffer[CRC_INDEX + 1];
+
+				if (computedCRC != retrievedCRC) {
+					uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_ERR,
+					                                  Current_CMD, Current_Size_Left);
+					
+					/* send the ACK over USB */
+					USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
+					USBD_CDC_TransmitPacket(hUsbDevice_0);
+					/* Wait for another buffer */
+					continue;
+				}
+				/* CRCs match */
+
+				/* Check if CMDs and Size_Lefts match  */
+				if (Current_CMD != transmitBuffer[CMD_INDEX] ||
+				    Current_Size_Left != (transmitBuffer[SIZE_INDEX] << 8)
+				    + transmitBuffer[SIZE_INDEX + 1]) {
+
+					uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_NOK,
+					                                  Current_CMD, Current_Size_Left);
+					
+					/* send the ACK over USB */
+					USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
+					USBD_CDC_TransmitPacket(hUsbDevice_0);
+					/* Wait for another buffer */
+					continue;
+				}
+				/* CMDs and Sizes match */
+
+				/* All good -> send to receptionQueue to retrieve data */
 				if (xQueueSend(receptionQueue, &transmitBuffer[0], 10) != pdTRUE) {
 					/* Handle error */
 				}
 
+				/* Set ACK_OK */
 				uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_OK, Current_CMD, Current_Size_Left);
 
 				/* send the ACK over USB */
 				USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
 				USBD_CDC_TransmitPacket(hUsbDevice_0);
 
-			} else {
+				/* Update Current_Size_Left */
+				Current_Size_Left = MAX(0, (Current_Size_Left - 57)); 
+
+			} else { 			/* Not a known CMD */
 				/* Simple echo */
 				USBD_CDC_SetTxBuffer(hUsbDevice_0, &transmitBuffer[0], 1);
 				USBD_CDC_TransmitPacket(hUsbDevice_0);
@@ -465,7 +512,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 
 /* Helper */
 static bool Is_CMD_Known(uint8_t CMD) {
-	if (CMD == CDC_DISPLAY_CUBE){
+	if (CMD == CDC_DISPLAY_CUBE){		
 		return true;
 	}
 
