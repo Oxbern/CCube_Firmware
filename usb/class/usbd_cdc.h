@@ -69,7 +69,7 @@ extern "C" {
 /*  CDC definitions                                                    */
 /*---------------------------------------------------------------------*/
 #define CDC_SEND_ENCAPSULATED_COMMAND               0x00
-#define CDC_DISPLAY_CUBE                            0x10
+#define CDC_DISPLAY_CUBE                            0x42
 #define CDC_SEND_ACK                                0x20
 #define CDC_SEND_ACK_OK                             0x21
 #define CDC_SEND_ACK_ERR                            0x22
