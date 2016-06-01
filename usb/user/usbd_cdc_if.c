@@ -155,77 +155,62 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 /* Private functions ---------------------------------------------------------*/
 
 /**
- * @brief  StartCDCReceptionTask
+ * @brief  SaveBufferUntilHandle
  *         Recovers data and store them into a localBuffer
  *         When full, sends data to the controller
- * @param argument: Default argument for task (NULL here)
+ * @param buff_RX: Buffer received over USB 
  */
+void SaveBufferUntilHandle(uint8_t *buff_RX)
+{	
+	static uint8_t localBuffer[512];
+	static uint16_t localBuffer_Current_Index;
+	static uint16_t localBuffer_Bytes_To_Be_Received;
 
-void StartCDCReceptionTask(void const *argument) {
+	uint16_t buff_RX_Index = DATA_INDEX;
 	
-	uint8_t localBuffer[512];
-	uint16_t localBuffer_Current_Index;
-	uint16_t localBuffer_Bytes_To_Be_Received;
+	/* Handle formatted buffer only */
+	if (Is_CMD_Known(buff_RX[CMD_INDEX])) {
 
-	/* uint8_t Current_CMD; */
-	
-	while (1) {
+		if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
 
-		uint8_t buff_RX[512] = {0};
-		uint16_t buff_RX_Index = DATA_INDEX;
-		
-		/* Receive message send over reception queue */
-		if (xQueueReceive(receptionQueue, &buff_RX[0], 10) != pdTRUE){
-			/* Handle error */
-		} else {
+			/* Clear local buffer */
+			for (int i = 0; i < 512; ++i) {
+				localBuffer[i] = 0;
+			}
 
- 			/* Handle formatted buffer only */
-			if (Is_CMD_Known(buff_RX[CMD_INDEX])) {
+			/* Set the index of local buffer to 0 */
+			localBuffer_Current_Index = 0;
 
-				if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
-
-					/* Clear local buffer */
-					for (int i = 0; i < 512; ++i) {
-						localBuffer[i] = 0;
-					}
-
-					/* Set the index of local buffer to 0 */
-					localBuffer_Current_Index = 0;
-
-					/* Retrieve number of bytes to be received */
-					localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
-						+ (buff_RX[SIZE_INDEX] << 8);
-				}
+			/* Retrieve number of bytes to be received */
+			localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
+				+ (buff_RX[SIZE_INDEX] << 8);
+		}
 				
 				
-				while (buff_RX_Index < CRC_INDEX
-				       && localBuffer_Bytes_To_Be_Received > 0) {
-					/* Copy value in local buffer */
-					localBuffer[localBuffer_Current_Index++] = buff_RX[buff_RX_Index++];
+		while (buff_RX_Index < CRC_INDEX
+		       && localBuffer_Bytes_To_Be_Received > 0) {
+			/* Copy value in local buffer */
+			localBuffer[localBuffer_Current_Index++] = buff_RX[buff_RX_Index++];
 
-					/* Update control variable */
-					localBuffer_Bytes_To_Be_Received--;
-				}
+			/* Update control variable */
+			localBuffer_Bytes_To_Be_Received--;
+		}
 
-				if (localBuffer_Bytes_To_Be_Received == 0
-				    && localBuffer_Current_Index > 0) {
+		if (localBuffer_Bytes_To_Be_Received == 0
+		    && localBuffer_Current_Index > 0) {
 
-					/* Send the data into the transmission queue */
-					xQueueSend(displayQueue, &localBuffer[0], 10);
+			/* Send the data into the transmission queue */
+			xQueueSend(displayQueue, &localBuffer[0], 10);
 
-					/* Set the index back to 0 */
-					localBuffer_Current_Index = 0;
+			/* Set the index back to 0 */
+			localBuffer_Current_Index = 0;
 					
-					/* Wait for another buffer before sending a message to update task */
-					localBuffer_Bytes_To_Be_Received = 1;
-				} 
+			/* Wait for another buffer before sending a message to update task */
+			localBuffer_Bytes_To_Be_Received = 1;
+		} 
 				
-			} /* End of if statement (Is_CMD_Known) */
+	} /* End of if statement (Is_CMD_Known) */
 			
-		} /* End of else statement (buffer was received) */
-		
-	} /* End of infinite loop */
-	
 } /* End of reception task */
 
 /**
@@ -234,10 +219,11 @@ void StartCDCReceptionTask(void const *argument) {
  *         And sends ack back over USB connection
  * @param  argument: default argument for task (NULL here)
  */
-void StartCDCAckTransmissionTask(void const *argument) {
+void StartCDCAckTransmissionTask(void const *argument)
+{
 
 	uint8_t Current_CMD = 0;
-	uint16_t Current_Size_Left = 0;
+	int16_t Current_Size_Left = 0;
 
 	while (1) {
 		
@@ -334,13 +320,16 @@ void StartCDCAckTransmissionTask(void const *argument) {
 	
 } /* End of ACK transmission task */
 
+
+
 /**
  * @brief  StartCDCDisplayTask
  *         Converts data received over USB in shapes on the cube
  * @param  argument: default argument for task (NULL here)
  */
-void StartCDCDisplayTask(void const *argument) {
-	
+void StartCDCDisplayTask(void const *argument)
+{
+	/* Infinite loop */
 	while (1) {
 		uint8_t localBuffer[512] = {0};
 	
@@ -375,7 +364,8 @@ void StartCDCDisplayTask(void const *argument) {
 			for (int l = 0; l < CUBE_WIDTH; ++l){
 				led_update(l);
 			}
-		}
+
+		} /* End of else statement (Buffer received) */
 
 	}	/* End of infinite loop */
 
@@ -386,6 +376,7 @@ void StartCDCDisplayTask(void const *argument) {
  * @brief  CDC_Init_FS
  *         Initializes the CDC media low layer over the FS USB IP
  * @param  None
+ *
  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
  */
 static int8_t CDC_Init_FS(void)
@@ -511,7 +502,16 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 
 
 /* Helper */
-static bool Is_CMD_Known(uint8_t CMD) {
+
+/**
+ * @brief  Is_CMD_Known
+ *         Checks if a CMD is known
+ *
+ * @param  CMD: CMD to check
+ * @retval Return true if the CMD is known, false otherwise
+ */
+static bool Is_CMD_Known(uint8_t CMD)
+{
 	if (CMD == CDC_DISPLAY_CUBE){		
 		return true;
 	}
