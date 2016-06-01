@@ -46,7 +46,6 @@
 /* Exported constants --------------------------------------------------------*/
 
 	 extern QueueHandle_t receptionQueue;
-	 extern QueueHandle_t ackQueue;
 	 extern QueueHandle_t displayQueue;
 
 /* Exported cariables --------------------------------------------------------*/

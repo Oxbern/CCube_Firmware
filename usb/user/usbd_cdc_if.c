@@ -106,9 +106,9 @@ uint16_t UserRxBufferFS_Current_Index;
 #define BEGINNING_DATA 0x01 
 
 /* ACK opCode */
-#define ACK_OK 0x20
-#define ACK_ERR 0x21
-#define ACK_NOK 0x22
+#define ACK_OK 0x01
+#define ACK_ERR 0x02
+#define ACK_NOK 0x03
 
 /* Macro to define ACK (OK, ERR or NOK) */
 #define ACK(IdDevice, AckType, CmdBuff, SizeBuff)              \
@@ -134,8 +134,11 @@ static int8_t CDC_Init_FS     (void);
 static int8_t CDC_DeInit_FS   (void);
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
+
+static void StoreDataUntilHandling(uint8_t *buff_RX);
+	
 void StartCDCReceptionTask(void const *argument);
-void StartCDCAckTransmissionTask(void const *argument);
+
 void StartCDCDisplayTask(void const *argument);
 
 
@@ -160,7 +163,7 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
  *         When full, sends data to the controller
  * @param buff_RX: Buffer received over USB 
  */
-void SaveBufferUntilHandle(uint8_t *buff_RX)
+static void StoreDataUntilHandling(uint8_t *buff_RX)
 {	
 	static uint8_t localBuffer[512];
 	static uint16_t localBuffer_Current_Index;
@@ -214,12 +217,12 @@ void SaveBufferUntilHandle(uint8_t *buff_RX)
 } /* End of reception task */
 
 /**
- * @brief  StartCDCAckTransmissionTask
- *         Recovers data over ack queue (sent by CDC_Receive_FS)
+ * @brief  StartCDCReceptionTransmissionTask
+ *         Recovers data over reception queue (sent by CDC_Receive_FS)
  *         And sends ack back over USB connection
  * @param  argument: default argument for task (NULL here)
  */
-void StartCDCAckTransmissionTask(void const *argument)
+void StartCDCReceptionTask(void const *argument)
 {
 
 	uint8_t Current_CMD = 0;
@@ -230,7 +233,7 @@ void StartCDCAckTransmissionTask(void const *argument)
 		uint8_t transmitBuffer[512];
 		
 		/* Receive message send over ack queue */
-		if (xQueueReceive(ackQueue, &transmitBuffer[0], 10) != pdTRUE){
+		if (xQueueReceive(receptionQueue, &transmitBuffer[0], 10) != pdTRUE){
 			/* Handle error */
 		} else {			
 
@@ -240,7 +243,22 @@ void StartCDCAckTransmissionTask(void const *argument)
 
 				if (transmitBuffer[BEGINNING_INDEX] == BEGINNING_DATA) {
 
-					/* Check if buffer are missing */
+					/* If buffer ask to reset the reception then reset */
+					if (transmitBuffer[CMD_INDEX] == CDC_RESET_RECEPTION) {
+						Current_CMD = 0;
+						Current_Size_Left = 0;
+
+						/* Set ACK_OK */
+						uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_OK,
+						                                  Current_CMD, Current_Size_Left);
+						
+						/* send the ACK over USB */
+						USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
+						USBD_CDC_TransmitPacket(hUsbDevice_0);
+						continue;
+					}
+					
+                    /* Check if buffer are missing */
 					if (Current_Size_Left) {
 						uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_NOK,
 						                                  Current_CMD, Current_Size_Left);
@@ -257,25 +275,25 @@ void StartCDCAckTransmissionTask(void const *argument)
 					Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
 						+ transmitBuffer[SIZE_INDEX + 1];
 				}
+				
 
+				/* /\* Check if CRCs match *\/ */
+				/* uint16_t computedCRC = computeCRC(&transmitBuffer[0], */
+				/*                                   62*sizeof(uint8_t)); */
+				/* uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8) */
+				/* 	+ transmitBuffer[CRC_INDEX + 1]; */
 
-				/* Check if CRCs match */
-				uint16_t computedCRC = computeCRC(&transmitBuffer[0],
-				                                  62*sizeof(uint8_t));
-				uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8)
-					+ transmitBuffer[CRC_INDEX + 1];
-
-				if (computedCRC != retrievedCRC) {
-					uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_ERR,
-					                                  Current_CMD, Current_Size_Left);
+				/* if (computedCRC != retrievedCRC) { */
+				/* 	uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_ERR, */
+				/* 	                                  Current_CMD, Current_Size_Left); */
 					
-					/* send the ACK over USB */
-					USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-					USBD_CDC_TransmitPacket(hUsbDevice_0);
-					/* Wait for another buffer */
-					continue;
-				}
-				/* CRCs match */
+				/* 	/\* send the ACK over USB *\/ */
+				/* 	USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE); */
+				/* 	USBD_CDC_TransmitPacket(hUsbDevice_0); */
+				/* 	/\* Wait for another buffer *\/ */
+				/* 	continue; */
+				/* } */
+				/* /\* CRCs match *\/ */
 
 				/* Check if CMDs and Size_Lefts match  */
 				if (Current_CMD != transmitBuffer[CMD_INDEX] ||
@@ -291,12 +309,7 @@ void StartCDCAckTransmissionTask(void const *argument)
 					/* Wait for another buffer */
 					continue;
 				}
-				/* CMDs and Sizes match */
-
-				/* All good -> send to receptionQueue to retrieve data */
-				if (xQueueSend(receptionQueue, &transmitBuffer[0], 10) != pdTRUE) {
-					/* Handle error */
-				}
+				/* CMDs and Sizes match */				
 
 				/* Set ACK_OK */
 				uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_OK, Current_CMD, Current_Size_Left);
@@ -304,6 +317,10 @@ void StartCDCAckTransmissionTask(void const *argument)
 				/* send the ACK over USB */
 				USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
 				USBD_CDC_TransmitPacket(hUsbDevice_0);
+
+
+				/* All good -> store data until message is complete */
+				StoreDataUntilHandling(&transmitBuffer[0]);
 
 				/* Update Current_Size_Left */
 				Current_Size_Left = MAX(0, (Current_Size_Left - 57)); 
@@ -466,7 +483,7 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 	memcpy(&buff_RX, Buf, 512);
 		
 	/* Send the message to the queue */
-	if (xQueueSendFromISR(ackQueue, &buff_RX,
+	if (xQueueSendFromISR(receptionQueue, &buff_RX,
 	                      &xHigherPriorityTaskWoken) != pdTRUE) {
 		/* Handle error */
 	}
@@ -512,7 +529,8 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
  */
 static bool Is_CMD_Known(uint8_t CMD)
 {
-	if (CMD == CDC_DISPLAY_CUBE){		
+	if (CMD == CDC_DISPLAY_CUBE
+	    || CMD == CDC_RESET_RECEPTION){		
 		return true;
 	}
 
