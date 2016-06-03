@@ -52,8 +52,6 @@
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
 
 /* Exported macro ------------------------------------------------------------*/
-
-#define ACK_SIZE 9
 	 
 /* Exported functions ------------------------------------------------------- */
 /** @defgroup USBD_CDC_IF_Exported_FunctionsPrototype
