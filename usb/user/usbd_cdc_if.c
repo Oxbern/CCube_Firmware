@@ -301,7 +301,8 @@ void StartCDCReceptionTask(void const *argument)
                 /* Check if CRCs match */
                 uint16_t computedCRC = computeCRC(&transmitBuffer[0],
                                                   (Get_Size_Buffer_From_CMD(
-                                                      transmitBuffer[0]) - CRC_SIZE)
+                                                      transmitBuffer[CMD_INDEX])
+                                                   - CRC_SIZE)
                                                   *sizeof(uint8_t));
 
                 uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8)
@@ -348,8 +349,9 @@ void StartCDCReceptionTask(void const *argument)
 
                 /* Update Current_Size_Left */
                 Current_Size_Left = MAX(0, (Current_Size_Left -
-                                            Get_Size_Buffer_From_CMD(transmitBuffer[0])
-                                            - ENCAPSULATION_SIZE));
+                                            (Get_Size_Buffer_From_CMD(
+                                                transmitBuffer[CMD_INDEX])
+                                             - ENCAPSULATION_SIZE)));
 
             } else {            /* Not a known CMD */
                 /* Simple echo */
