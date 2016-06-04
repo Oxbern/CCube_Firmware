@@ -111,14 +111,10 @@ uint16_t UserRxBufferFS_Current_Index;
 #define ACK_NOK 0x03
 
 /* User size */
-#define ACK_SIZE 9
+#define ACK_SIZE 10
 #define CRC_SIZE 2
 #define ENCAPSULATION_SIZE 7
 
-/* Macro to define ACK (OK, ERR or NOK) */
-#define ACK(IdDevice, AckType, CmdBuff, SizeBuff)   \
-    {1, (IdDevice), (AckType), 0, 3, CmdBuff,       \
-            (SizeBuff >> 8), (SizeBuff & 0xFF)}
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -170,7 +166,8 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
  */
 static void StoreDataUntilHandling(uint8_t *buff_RX)
 {
-    static uint8_t localBuffer[512];
+    /* Store up to 10 buffers */
+    static uint8_t localBuffer[CDC_MAX_DATA_SIZE];
     static uint16_t localBuffer_Current_Index;
     static uint16_t localBuffer_Bytes_To_Be_Received;
 
@@ -182,7 +179,7 @@ static void StoreDataUntilHandling(uint8_t *buff_RX)
         if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
 
             /* Clear local buffer */
-            for (int i = 0; i < 512; ++i) {
+            for (int i = 0; i < CDC_MAX_DATA_SIZE; ++i) {
                 localBuffer[i] = 0;
             }
 
@@ -221,6 +218,7 @@ static void StoreDataUntilHandling(uint8_t *buff_RX)
 
 } /* End of reception task */
 
+
 /**
  * @brief  StartCDCReceptionTransmissionTask
  *         Recovers data over reception queue (sent by CDC_Receive_FS)
@@ -235,10 +233,10 @@ void StartCDCReceptionTask(void const *argument)
 
     while (1) {
 
-        uint8_t transmitBuffer[512];
+        uint8_t transmitBuffer[CDC_BUFFER_SIZE];
 
         /* Receive message send over ack queue */
-        if (xQueueReceive(receptionQueue, &transmitBuffer[0], 10) != pdTRUE){
+        if (xQueueReceive(receptionQueue, &transmitBuffer[0], 0) != pdTRUE){
             /* Handle error */
         } else {
 
@@ -249,109 +247,116 @@ void StartCDCReceptionTask(void const *argument)
                 /* Buffer is the beginning of a message */
                 if (transmitBuffer[BEGINNING_INDEX] == BEGINNING_DATA) {
 
-                    /* If buffer ask to reset the reception then reset */
-                    if (transmitBuffer[CMD_INDEX] == CDC_RESET_RECEPTION) {
-                        Current_CMD = 0;
-                        Current_Size_Left = 0;
+                    /* /\* If buffer ask to reset the reception then reset *\/ */
+                    /* if (transmitBuffer[CMD_INDEX] == CDC_RESET_RECEPTION) { */
+                    /*     Current_CMD = 0; */
+                    /*     Current_Size_Left = 0; */
 
-                        /* Set ACK_OK */
-                        uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_OK,
-                                                          Current_CMD, Current_Size_Left);
+                    /*     /\* Set ACK_OK *\/ */
+                    /*     uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_NOK, 0, 3, */
+                    /*                                    Current_CMD, */
+                    /*                                    Current_Size_Left >> 8, */
+                    /*                                    Current_Size_Left & 0xFF, 0, 0}; */
 
-                        /* send the ACK over USB */
-                        USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                        USBD_CDC_TransmitPacket(hUsbDevice_0);
-                        continue;
-                    }
+                    /*     /\* send the ACK over USB *\/ */
+                    /*     USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE); */
+                    /*     USBD_CDC_TransmitPacket(hUsbDevice_0); */
+                    /*     continue; */
+                    /* } */
 
-                    /* Check if buffer are missing */
-                    if (Current_Size_Left) {
-                        uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_NOK,
-                                                          Current_CMD, Current_Size_Left);
+                    /* /\* Check if buffer are missing *\/ */
+                    /* if (Current_Size_Left) { */
+                    /*     uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_NOK, 0, 3, */
+                    /*                                    Current_CMD, */
+                    /*                                    Current_Size_Left >> 8, */
+                    /*                                    Current_Size_Left & 0xFF, 0, 0}; */
 
-                        /* send the ACK over USB */
-                        USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                        USBD_CDC_TransmitPacket(hUsbDevice_0);
-                        /* Wait for another buffer */
-                        continue;
-                    }
+                    /*     /\* send the ACK over USB *\/ */
+                    /*     USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE); */
+                    /*     USBD_CDC_TransmitPacket(hUsbDevice_0); */
+                    /*     /\* Wait for another buffer *\/ */
+                    /*     continue; */
+                    /* } */
 
                     /* New message: Current _Size_Left == 0 */
                     Current_CMD = transmitBuffer[CMD_INDEX];
                     Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
                         + transmitBuffer[SIZE_INDEX + 1];
-                } else if (transmitBuffer[BEGINNING_INDEX] == RETRANSMIT_BUFFER) {
 
-                    uint16_t size_buff = (transmitBuffer[SIZE_INDEX] << 8)
-                        + transmitBuffer[SIZE_INDEX + 1];
+                    /* } else if (transmitBuffer[BEGINNING_INDEX] == RETRANSMIT_BUFFER) { */
 
-                    /* Set ACK_OK */
-                    uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_OK,
-                                                      Current_CMD, size_buff);
+                    /* uint16_t size_buff = (transmitBuffer[SIZE_INDEX] << 8) */
+                    /*     + transmitBuffer[SIZE_INDEX + 1]; */
 
-                    /* send the ACK over USB */
-                    USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                    USBD_CDC_TransmitPacket(hUsbDevice_0);
+                    /* /\* Set ACK_OK *\/ */
+                    /* uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_OK, 0, 3, */
+                    /*                                Current_CMD, size_buff >> 8, */
+                    /*                                size_buff & 0xFF, 0, 0}; */
 
-                    continue;
+                    /* /\* send the ACK over USB *\/ */
+                    /* USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE); */
+                    /* USBD_CDC_TransmitPacket(hUsbDevice_0); */
 
+                    /* continue; */
                 }
 
 
-                /* Check if CRCs match */
-                uint16_t computedCRC = computeCRC(&transmitBuffer[0],
-                                                  (Get_Size_Buffer_From_CMD(
-                                                      transmitBuffer[CMD_INDEX])
-                                                   - CRC_SIZE)
-                                                  *sizeof(uint8_t));
+                /* /\* Check if CRCs match *\/ */
+                /* uint16_t computedCRC = computeCRC(&transmitBuffer[0], */
+                /*                                   (Get_Size_Buffer_From_CMD( */
+                /*                                       transmitBuffer[CMD_INDEX]) */
+                /*                                    - CRC_SIZE) */
+                /*                                   *sizeof(uint8_t)); */
 
-                uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8)
-                    + transmitBuffer[CRC_INDEX + 1];
+                /* uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8) */
+                /*     + transmitBuffer[CRC_INDEX + 1]; */
 
-                if (computedCRC != retrievedCRC) {
-                    uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_ERR,
-                                                      Current_CMD, Current_Size_Left);
+                /* if (computedCRC != retrievedCRC) { */
+                /*     uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_ERR, 0, 3, */
+                /*                                    Current_CMD, Current_Size_Left >> 8, */
+                /*                                    Current_Size_Left & 0xFF, 0, 0}; */
 
-                    /* send the ACK over USB */
-                    USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                    USBD_CDC_TransmitPacket(hUsbDevice_0);
-                    /* Wait for another buffer */
-                    continue;
-                }
-                /* CRCs match */
+                /*     /\* send the ACK over USB *\/ */
+                /*     USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE); */
+                /*     USBD_CDC_TransmitPacket(hUsbDevice_0); */
+                /*     /\* Wait for another buffer *\/ */
+                /*     continue; */
+                /* } */
+                /* /\* CRCs match *\/ */
 
-                /* Check if CMDs and Size_Lefts match  */
-                if (Current_CMD != transmitBuffer[CMD_INDEX] ||
-                    Current_Size_Left != (transmitBuffer[SIZE_INDEX] << 8)
-                    + transmitBuffer[SIZE_INDEX + 1]) {
+                /* /\* Check if CMDs and Size_Lefts match  *\/ */
+                /* if (Current_CMD != transmitBuffer[CMD_INDEX] || */
+                /*     Current_Size_Left != (transmitBuffer[SIZE_INDEX] << 8) */
+                /*     + transmitBuffer[SIZE_INDEX + 1]) { */
 
-                    uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_NOK,
-                                                      Current_CMD, Current_Size_Left);
+                /*     uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_NOK, 0, 3, */
+                /*                                    Current_CMD, Current_Size_Left >> 8, */
+                /*                                    Current_Size_Left & 0xFF, 0, 0}; */
 
-                    /* send the ACK over USB */
-                    USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                    USBD_CDC_TransmitPacket(hUsbDevice_0);
-                    /* Wait for another buffer */
-                    continue;
-                }
-                /* CMDs and Sizes match */
+                /*     /\* send the ACK over USB *\/ */
+                /*     USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE); */
+                /*     USBD_CDC_TransmitPacket(hUsbDevice_0); */
+                /*     /\* Wait for another buffer *\/ */
+                /*     continue; */
+                /* } */
+                /* /\* CMDs and Sizes match *\/ */
 
                 /* Set ACK_OK */
-                uint8_t ackBuffer[ACK_SIZE] = ACK(1, ACK_OK, Current_CMD, Current_Size_Left);
+                uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_OK, 0, 3,
+                                               Current_CMD, Current_Size_Left >> 8,
+                                               Current_Size_Left & 0xFF, 0, 0};
 
                 /* send the ACK over USB */
-                USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
+                USBD_CDC_SetTxBuffer(hUsbDevice_0,
+                                     &ackBuffer[0], ACK_SIZE);
                 USBD_CDC_TransmitPacket(hUsbDevice_0);
-
 
                 /* All good -> store data until message is complete */
                 StoreDataUntilHandling(&transmitBuffer[0]);
 
                 /* Update Current_Size_Left */
-                Current_Size_Left = MAX(0, (Current_Size_Left -
-                                            (Get_Size_Buffer_From_CMD(
-                                                transmitBuffer[CMD_INDEX])
-                                             - ENCAPSULATION_SIZE)));
+                Current_Size_Left = MAX(0, (Current_Size_Left - 57));
+
 
             } else {            /* Not a known CMD */
                 /* Simple echo */
@@ -376,10 +381,10 @@ void StartCDCDisplayTask(void const *argument)
 {
     /* Infinite loop */
     while (1) {
-        uint8_t localBuffer[512] = {0};
+        uint8_t localBuffer[CDC_MAX_DATA_SIZE] = {0};
 
         /* Receive message send over transmission queue */
-        if (xQueueReceive(displayQueue, &localBuffer[0], 10) != pdTRUE){
+        if (xQueueReceive(displayQueue, &localBuffer[0], 0) != pdTRUE){
             /* Handle error */
         } else {
 
@@ -412,9 +417,9 @@ void StartCDCDisplayTask(void const *argument)
 
         } /* End of else statement (Buffer received) */
 
-    }   /* End of infinite loop */
+    } /* End of infinite loop */
 
-}       /* End of display task */
+} /* End of display task */
 
 
 /**
@@ -428,9 +433,11 @@ static int8_t CDC_Init_FS(void)
 {
     hUsbDevice_0 = &hUsbDeviceFS;
     /* USER CODE BEGIN 3 */
+
     /* Set Application Buffers */
     USBD_CDC_SetTxBuffer(hUsbDevice_0, UserTxBufferFS, 0);
     USBD_CDC_SetRxBuffer(hUsbDevice_0, UserRxBufferFS);
+
     return (USBD_OK);
     /* USER CODE END 3 */
 }
@@ -459,20 +466,9 @@ static int8_t CDC_DeInit_FS(void)
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
     /* USER CODE BEGIN 5 */
-    int k = 0;
     switch (cmd)
     {
     case CDC_DISPLAY_CUBE:
-        for (int i = 0; i < CUBE_WIDTH+1; ++i) {
-            for (int j = 0; j < CUBE_WIDTH+1; ++j) {
-                buffer_update(i, j, (pbuf[k] << 8) + pbuf[k+1]);
-                k += 2;
-            }
-        }
-
-        for (int l = 0; l < CUBE_WIDTH; ++l){
-            led_update(l);
-        }
         break;
 
     default:
@@ -504,11 +500,11 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
 {
     /* USER CODE BEGIN 6 */
     uint8_t result = USBD_OK;
-    uint8_t buff_RX[512];
+    uint8_t buff_RX[CDC_BUFFER_SIZE];
 
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-    memcpy(&buff_RX, Buf, 512);
+    memcpy(&buff_RX, Buf, CDC_BUFFER_SIZE);
 
     /* Send the message to the queue */
     if (xQueueSendFromISR(receptionQueue, &buff_RX,
@@ -584,6 +580,7 @@ static uint16_t Get_Size_Buffer_From_CMD(uint8_t CMD) {
         return 0;
     }
 }
+
 /**
  * @}
  */

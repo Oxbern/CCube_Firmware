@@ -81,7 +81,7 @@ extern void StartCDCDisplayTask(void const * argument);
 
 
 QueueHandle_t receptionQueue = 0;
-QueueHandle_t displayQueue = 0;    
+QueueHandle_t displayQueue = 0;
 
 /**
  * FreeRTOS Initialisation function
@@ -116,17 +116,19 @@ void StartInitTask(void const * argument)
 	osThreadDef(blinkTask, StartBlinkTask, osPriorityNormal, 0, 8192);
 	blinkTaskHandle = osThreadCreate(osThread(blinkTask), NULL);
 
-	receptionQueue = xQueueCreate(30, 512*sizeof(uint8_t));
-	
-	displayQueue = xQueueCreate(30, 512*sizeof(uint8_t));
-
-	osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityNormal, 0, 8192);
+    osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityNormal, 0, 8192);
 	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask), NULL);
 
 	osThreadDef(cdcDisplayTask, StartCDCDisplayTask, osPriorityNormal, 0, 8192);
 	CDC_displayTaskHandle = osThreadCreate(osThread(cdcDisplayTask), NULL);
 
-	
+
+    /* Create queues which can store up to 500 buffers */
+	receptionQueue = xQueueCreate(500, CDC_BUFFER_SIZE*sizeof(uint8_t));
+
+	displayQueue = xQueueCreate(500, CDC_MAX_DATA_SIZE*sizeof(uint8_t));
+
+
 	vTaskDelete(initTaskHandle);
 }
 
@@ -142,7 +144,7 @@ bool correct_extention(char * filename)
 			return true;
 		} else {
 			return false;
-		}	
+		}
 	} else {
 		return false;
 	}
@@ -193,7 +195,7 @@ FRESULT scan_files (
         for (;;) {
             res = f_readdir(&dir, &fno);                   /* Read a directory item */
             if (res != FR_OK || fno.fname[0] == 0) break;  /* Break on error or end of dir */
-            if (fno.fname[0] == '.') 
+            if (fno.fname[0] == '.')
 			{
 					continue;             /* Ignore dot entry */
 			}
@@ -296,13 +298,13 @@ void update_motif(void)
 	led_clear();
 	point_t * p = m->points;
 	while (p != NULL)
-	{	
+	{
 		led_set(p->x, p->y, p->z);
 		p = p->next;
 	}
 
 	clear_points2blink();
-	
+
 	option_t * o = m->options;
 	while (o != NULL)
 	{
@@ -315,7 +317,7 @@ void _cbrundb(WM_MESSAGE * pMsg)
 {
 	int NCode;
 	int Id;
-	
+
 	switch(pMsg->MsgId)
 	{
 		case WM_NOTIFY_PARENT:
@@ -335,7 +337,7 @@ void _cbrundb(WM_MESSAGE * pMsg)
 						}
 						break;
 				}
-				
+
 			}
 			else if (Id == GUI_ID_BUTTON1) // Next
 			{
@@ -359,7 +361,7 @@ void _cbrundb(WM_MESSAGE * pMsg)
 		default:
 			WM_DefaultProc(pMsg);
 	}
-	
+
 }
 
 extern GUI_CONST_STORAGE GUI_BITMAP bmarrowrdefault;
@@ -370,7 +372,7 @@ extern GUI_CONST_STORAGE GUI_BITMAP bmarrowclicked;
 
 void run_db(void)
 {
-/*	
+/*
 	printf("Database name : %s\n", db->name);
 	printf("Database nb children : %i\n", (int)db->nb_motifs);
 	for (uint32_t i = 0; i < db->nb_motifs; i++)
@@ -409,7 +411,7 @@ void run_db(void)
 													TEXT_CF_HCENTER | TEXT_CF_VCENTER, GUI_ID_TEXT0,
 													(const char *)current_motif_title);
 
-	
+
 	motif_desc_widget = MULTIEDIT_CreateEx(	100, 100,
 																600, 380,
 																db_nav_win, WM_CF_SHOW,
@@ -428,7 +430,7 @@ void run_db(void)
 													100, 380,
 													db_nav_win, WM_CF_SHOW,
 													0,  GUI_ID_BUTTON1);
-	
+
 	TEXT_SetFont(motif_name_widget, GUI_FONT_24_1);
 	BUTTON_SetFont(bt_prev_widget, GUI_FONT_24_1);
 	BUTTON_SetFont(bt_next_widget, GUI_FONT_24_1);
@@ -449,7 +451,7 @@ void _cbHBKWIN(WM_MESSAGE * pMsg)
 	TREEVIEW_ITEM_Handle Sel;
 	int Id;
 	char pBuffer[128];
-	
+
 	switch (pMsg->MsgId)
 	{
 		case WM_NOTIFY_PARENT:
@@ -467,7 +469,7 @@ void _cbHBKWIN(WM_MESSAGE * pMsg)
 						Sel = TREEVIEW_GetSel(pMsg->hWinSrc);
 						TREEVIEW_ITEM_GetText(Sel, (U8*)pBuffer, 128);
 						printf("Selecting \"%s\"\n", pBuffer);
-						
+
 						myfd_t * selfd = (myfd_t *) TREEVIEW_ITEM_GetUserData(Sel);
 						printf("Path to selection : %s\n", selfd->path);
 						if (selfd->type == 0)
@@ -484,7 +486,7 @@ void _cbHBKWIN(WM_MESSAGE * pMsg)
 								printf("Error loading database\n");
 							}
 						}
-						
+
 						break;
 					case WM_NOTIFICATION_SEL_CHANGED:
 						printf("Selection changed\n");
@@ -514,7 +516,7 @@ void _cbHBKWIN(WM_MESSAGE * pMsg)
 				}
 			}
 			break;
-		
+
 		case WM_PAINT:
 			GUI_SetColor(GUI_WHITE);
 			GUI_Clear();
@@ -549,4 +551,3 @@ void StartFsTask(void const * argument)
 		osDelay(5000);
     }
 }
-
