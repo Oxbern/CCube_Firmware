@@ -124,10 +124,9 @@ void StartInitTask(void const * argument)
 
 
     /* Create queues which can store up to 500 buffers */
-	receptionQueue = xQueueCreate(500, CDC_BUFFER_SIZE*sizeof(uint8_t));
+	receptionQueue = xQueueCreate(100, CDC_BUFFER_SIZE*sizeof(uint8_t));
 
-	displayQueue = xQueueCreate(500, CDC_MAX_DATA_SIZE*sizeof(uint8_t));
-
+	displayQueue = xQueueCreate(100, CDC_MAX_DATA_SIZE*sizeof(uint8_t));
 
 	vTaskDelete(initTaskHandle);
 }
