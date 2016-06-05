@@ -283,7 +283,7 @@ void StartCDCReceptionTask(void const *argument)
                     Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
                         + transmitBuffer[SIZE_INDEX + 1];
 
-                    } else if (transmitBuffer[BEGINNING_INDEX] == RETRANSMIT_BUFFER) {
+                } else if (transmitBuffer[BEGINNING_INDEX] == RETRANSMIT_BUFFER) {
 
                     uint16_t size_buff = (transmitBuffer[SIZE_INDEX] << 8)
                         + transmitBuffer[SIZE_INDEX + 1];
@@ -358,7 +358,7 @@ void StartCDCReceptionTask(void const *argument)
                 Current_Size_Left = MAX(0, (Current_Size_Left - 57));
 
 
-            } else {            /* Not a known CMD */
+            } else {
                 /* Simple echo */
                 USBD_CDC_SetTxBuffer(hUsbDevice_0, &transmitBuffer[0], 1);
                 USBD_CDC_TransmitPacket(hUsbDevice_0);
@@ -505,10 +505,10 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
     /* Copy data received in a local variable */
-    memcpy(&buff_RX, Buf, CDC_BUFFER_SIZE);
+    memcpy(buff_RX, Buf, CDC_BUFFER_SIZE);
 
     /* Send the message to the queue */
-    if (xQueueSendFromISR(receptionQueue, &buff_RX,
+    if (xQueueSendFromISR(receptionQueue, buff_RX,
                           &xHigherPriorityTaskWoken) != pdTRUE) {
         /* Handle error */
     }
