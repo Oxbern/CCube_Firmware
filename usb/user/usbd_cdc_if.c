@@ -137,6 +137,8 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 
 static void StoreDataUntilHandling(uint8_t *buff_RX);
+static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
+                        uint16_t Current_Size_Left);
 
 void StartCDCReceptionTask(void const *argument);
 
@@ -229,6 +231,8 @@ void StartCDCReceptionTask(void const *argument)
 {
     uint8_t Current_CMD = 0;
     int16_t Current_Size_Left = 0;
+    uint8_t *ackBuffer;
+
 
     while (1) {
 
@@ -252,11 +256,9 @@ void StartCDCReceptionTask(void const *argument)
                         Current_CMD = 0;
                         Current_Size_Left = 0;
 
-                        /* Set ACK_OK */
-                        uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_NOK, 0, 3,
-                                                       Current_CMD,
-                                                       Current_Size_Left >> 8,
-                                                       Current_Size_Left & 0xFF, 0, 0};
+                        /* /\* Set ACK OK *\/ */
+                        ackBuffer = Set_ACK(ACK_OK, Current_CMD,
+                                            Current_Size_Left);
 
                         /* send the ACK over USB */
                         while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -266,10 +268,10 @@ void StartCDCReceptionTask(void const *argument)
 
                     /* Check if buffer are missing */
                     if (Current_Size_Left) {
-                        uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_NOK, 0, 3,
-                                                       Current_CMD,
-                                                       Current_Size_Left >> 8,
-                                                       Current_Size_Left & 0xFF, 0, 0};
+
+                        /* Set ACK NOK */
+                        ackBuffer = Set_ACK(ACK_NOK, Current_CMD,
+                                            Current_Size_Left);
 
                         /* send the ACK over USB */
                         while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -287,10 +289,9 @@ void StartCDCReceptionTask(void const *argument)
                     uint16_t size_buff = (transmitBuffer[SIZE_INDEX] << 8)
                         + transmitBuffer[SIZE_INDEX + 1];
 
-                    /* Set ACK_OK */
-                    uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_OK, 0, 3,
-                                                   Current_CMD, size_buff >> 8,
-                                                   size_buff & 0xFF, 0, 0};
+                    /* Set ACK NOK */
+                    ackBuffer = Set_ACK(ACK_NOK, Current_CMD,
+                                        size_buff);
 
                     /* send the ACK over USB */
                     while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -310,13 +311,13 @@ void StartCDCReceptionTask(void const *argument)
                     + transmitBuffer[CRC_INDEX + 1];
 
                 if (computedCRC != retrievedCRC) {
-                    uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_ERR, 0, 3,
-                                                   Current_CMD, Current_Size_Left >> 8,
-                                                   Current_Size_Left & 0xFF, 0, 0};
+
+                    /* Set ACK ERR */
+                    ackBuffer = Set_ACK(ACK_ERR, Current_CMD,
+                                        Current_Size_Left);
 
                     /* send the ACK over USB */
-                    USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                    while (USBD_CDC_TransmitPacket(hUsbDevice_0) != USBD_OK);
+                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
                     /* Wait for another buffer */
                     continue;
                 }
@@ -327,9 +328,9 @@ void StartCDCReceptionTask(void const *argument)
                     Current_Size_Left != (transmitBuffer[SIZE_INDEX] << 8)
                     + transmitBuffer[SIZE_INDEX + 1]) {
 
-                    uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_NOK, 0, 3,
-                                                   Current_CMD, Current_Size_Left >> 8,
-                                                   Current_Size_Left & 0xFF, 0, 0};
+                    /* /\* Set ACK NOK *\/ */
+                    ackBuffer = Set_ACK(ACK_NOK, Current_CMD,
+                                        Current_Size_Left);
 
                     /* send the ACK over USB */
                     while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -338,10 +339,9 @@ void StartCDCReceptionTask(void const *argument)
                 }
                 /* CMDs and Sizes match */
 
-                /* Set ACK_OK */
-                uint8_t ackBuffer[ACK_SIZE] = {1, 1, ACK_OK, 0, 3,
-                                               Current_CMD, Current_Size_Left >> 8,
-                                               Current_Size_Left & 0xFF, 0, 0};
+                /* Set ACK OK */
+                ackBuffer = Set_ACK(ACK_OK, Current_CMD,
+                                    Current_Size_Left);
 
                 /* send the ACK over USB */
                 while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -354,6 +354,7 @@ void StartCDCReceptionTask(void const *argument)
 
 
             } else {
+
                 /* Simple echo */
                 while (CDC_Transmit_FS(&transmitBuffer[0], 1) != USBD_OK);
             }
@@ -575,6 +576,30 @@ static uint16_t Get_Size_Buffer_From_CMD(uint8_t CMD) {
         return 0;
     }
 }
+
+
+static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
+                        uint16_t Current_Size_Left)
+{
+    static uint8_t ackBuffer[ACK_SIZE];
+
+    ackBuffer[0] = 1;
+    ackBuffer[1] = MyID;
+    ackBuffer[2] = Ack_Type;
+    ackBuffer[3] = 0;
+    ackBuffer[4] = 3;
+    ackBuffer[5] = Current_CMD;
+    ackBuffer[6] = Current_Size_Left >> 8;
+    ackBuffer[7] = Current_Size_Left & 0xFF;
+
+    uint16_t crc = computeCRC(ackBuffer, 8*sizeof(uint8_t));
+    ackBuffer[8] = crc >> 8;
+    ackBuffer[9] = crc & 0xFF;
+
+    return ackBuffer;
+}
+
+
 
 /**
  * @}
