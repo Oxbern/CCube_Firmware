@@ -259,8 +259,8 @@ void StartCDCReceptionTask(void const *argument)
                                                        Current_Size_Left & 0xFF, 0, 0};
 
                         /* send the ACK over USB */
-                        USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                        USBD_CDC_TransmitPacket(hUsbDevice_0);
+                        while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
+                        /* Wait for another buffer */
                         continue;
                     }
 
@@ -272,8 +272,7 @@ void StartCDCReceptionTask(void const *argument)
                                                        Current_Size_Left & 0xFF, 0, 0};
 
                         /* send the ACK over USB */
-                        USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                        USBD_CDC_TransmitPacket(hUsbDevice_0);
+                        while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
                         /* Wait for another buffer */
                         continue;
                     }
@@ -294,9 +293,8 @@ void StartCDCReceptionTask(void const *argument)
                                                    size_buff & 0xFF, 0, 0};
 
                     /* send the ACK over USB */
-                    USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                    USBD_CDC_TransmitPacket(hUsbDevice_0);
-
+                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
+                    /* Wait for another buffer */
                     continue;
                 }
 
@@ -318,7 +316,7 @@ void StartCDCReceptionTask(void const *argument)
 
                     /* send the ACK over USB */
                     USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                    USBD_CDC_TransmitPacket(hUsbDevice_0);
+                    while (USBD_CDC_TransmitPacket(hUsbDevice_0) != USBD_OK);
                     /* Wait for another buffer */
                     continue;
                 }
@@ -334,8 +332,7 @@ void StartCDCReceptionTask(void const *argument)
                                                    Current_Size_Left & 0xFF, 0, 0};
 
                     /* send the ACK over USB */
-                    USBD_CDC_SetTxBuffer(hUsbDevice_0, &ackBuffer[0], ACK_SIZE);
-                    USBD_CDC_TransmitPacket(hUsbDevice_0);
+                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
                     /* Wait for another buffer */
                     continue;
                 }
@@ -347,9 +344,7 @@ void StartCDCReceptionTask(void const *argument)
                                                Current_Size_Left & 0xFF, 0, 0};
 
                 /* send the ACK over USB */
-                USBD_CDC_SetTxBuffer(hUsbDevice_0,
-                                     &ackBuffer[0], ACK_SIZE);
-                USBD_CDC_TransmitPacket(hUsbDevice_0);
+                while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
 
                 /* All good -> store data until message is complete */
                 StoreDataUntilHandling(&transmitBuffer[0]);
@@ -360,8 +355,7 @@ void StartCDCReceptionTask(void const *argument)
 
             } else {
                 /* Simple echo */
-                USBD_CDC_SetTxBuffer(hUsbDevice_0, &transmitBuffer[0], 1);
-                USBD_CDC_TransmitPacket(hUsbDevice_0);
+                while (CDC_Transmit_FS(&transmitBuffer[0], 1) != USBD_OK);
             }
 
         } /* End of else statement (buffer received) */
