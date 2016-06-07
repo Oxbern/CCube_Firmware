@@ -46,7 +46,7 @@ extern "C" {
 /* Exported constants --------------------------------------------------------*/
 
     extern QueueHandle_t receptionQueue;
-    extern QueueHandle_t displayQueue;
+    extern QueueHandle_t controlQueue;
 
 /* Exported cariables --------------------------------------------------------*/
     extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
@@ -54,7 +54,7 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 
 #define CDC_BUFFER_SIZE 64
-#define CDC_MAX_DATA_SIZE 92
+#define CDC_MAX_DATA_SIZE 93
 
 /* Exported functions ------------------------------------------------------- */
 /** @defgroup USBD_CDC_IF_Exported_FunctionsPrototype

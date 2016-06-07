@@ -142,13 +142,14 @@ static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
 
 void StartCDCReceptionTask(void const *argument);
 
-void StartCDCDisplayTask(void const *argument);
+void StartCDCControlTask(void const *argument);
 
 
 
 /* Helpers */
 static bool Is_CMD_Known(uint8_t CMD);
-static uint16_t Get_Size_Buffer_From_CMD(uint8_t CMD);
+static uint16_t Get_Buffer_Size_From_CMD(uint8_t CMD);
+static uint16_t Get_Data_Size_From_CMD(uint8_t CMD);
 
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 {
@@ -175,48 +176,47 @@ static void StoreDataUntilHandling(uint8_t *buff_RX)
 
     uint16_t buff_RX_Index = DATA_INDEX;
 
-    /* Handle formatted buffer only */
-    if (Is_CMD_Known(buff_RX[CMD_INDEX])) {
 
-        if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
+    if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
 
-            /* Clear local buffer */
-            for (int i = 0; i < CDC_MAX_DATA_SIZE; ++i) {
-                localBuffer[i] = 0;
-            }
-
-            /* Set the index of local buffer to 0 */
-            localBuffer_Current_Index = 0;
-
-            /* Retrieve number of bytes to be received */
-            localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
-                + (buff_RX[SIZE_INDEX] << 8);
+        /* Clear local buffer */
+        for (int i = 0; i < CDC_MAX_DATA_SIZE; ++i) {
+            localBuffer[i] = 0;
         }
 
+        /* Set the index of local buffer to 0 */
+        localBuffer_Current_Index = 0;
 
-        while (buff_RX_Index < CRC_INDEX
-               && localBuffer_Bytes_To_Be_Received > 0) {
-            /* Copy value in local buffer */
-            localBuffer[localBuffer_Current_Index++] = buff_RX[buff_RX_Index++];
+        /* Current CMD is stored */
+        localBuffer[localBuffer_Current_Index++] = buff_RX[CMD_INDEX];
+
+        /* Retrieve number of bytes to be received */
+        localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
+            + (buff_RX[SIZE_INDEX] << 8);
+    }
+
+
+    while (buff_RX_Index < CRC_INDEX
+           && localBuffer_Bytes_To_Be_Received > 0) {
+        /* Copy value in local buffer */
+        localBuffer[localBuffer_Current_Index++] = buff_RX[buff_RX_Index++];
 
             /* Update control variable */
-            localBuffer_Bytes_To_Be_Received--;
-        }
+        localBuffer_Bytes_To_Be_Received--;
+    }
 
-        if (localBuffer_Bytes_To_Be_Received == 0
-            && localBuffer_Current_Index > 0) {
+    if (localBuffer_Bytes_To_Be_Received == 0
+        && localBuffer_Current_Index > 0) {
 
-            /* Send the data into the transmission queue */
-            xQueueSend(displayQueue, &localBuffer[0], 10);
+        /* Send the data into the transmission queue */
+        xQueueSend(controlQueue, &localBuffer[0], 0);
 
-            /* Set the index back to 0 */
-            localBuffer_Current_Index = 0;
+        /* Set the index back to 0 */
+        localBuffer_Current_Index = 0;
 
-            /* Wait for another buffer before sending a message to update task */
-            localBuffer_Bytes_To_Be_Received = 1;
-        }
-
-    } /* End of if statement (Is_CMD_Known) */
+        /* Wait for another buffer before sending a message to update task */
+        localBuffer_Bytes_To_Be_Received = 1;
+    }
 
 } /* End of reception task */
 
@@ -302,7 +302,7 @@ void StartCDCReceptionTask(void const *argument)
 
                 /* Check if CRCs match */
                 uint16_t computedCRC = computeCRC(&transmitBuffer[0],
-                                                  (Get_Size_Buffer_From_CMD(
+                                                  (Get_Buffer_Size_From_CMD(
                                                       transmitBuffer[CMD_INDEX])
                                                    - CRC_SIZE)
                                                   *sizeof(uint8_t));
@@ -368,47 +368,24 @@ void StartCDCReceptionTask(void const *argument)
 
 
 /**
- * @brief  StartCDCDisplayTask
- *         Converts data received over USB in shapes on the cube
+ * @brief  StartCDCControlTask
+ *         Recovers data and execute what CMD ask to do
+ *
  * @param  argument: default argument for task (NULL here)
  */
-void StartCDCDisplayTask(void const *argument)
+void StartCDCControlTask(void const *argument)
 {
     /* Infinite loop */
     while (1) {
         uint8_t localBuffer[CDC_MAX_DATA_SIZE] = {0};
 
         /* Receive message send over transmission queue */
-        if (xQueueReceive(displayQueue, &localBuffer[0], 0) != pdTRUE){
+        if (xQueueReceive(controlQueue, &localBuffer[0], 0) != pdTRUE){
             /* Handle error */
         } else {
 
-            bool actualBit;
-            uint8_t x = 0, y = 0, z = 0;
-
-            /* Local buffer has 92B of data (usefull)*/
-            for (int i = 0; i < 92; ++i) {
-                for (int j = 0; j < 8; ++j) {
-                    actualBit = localBuffer[i] & (1 << (7 - j));
-                    led_set_state(x, y, z, actualBit);
-
-                    z = (z + 1) % 9;
-                    if (z == 0) {
-                        y = (y + 1) % 9;
-                        if (y == 0) {
-                            x = (x + 1) % 9;
-                            if (x == 0) {
-                                i = 92;
-                                j = 8;
-                            }
-                        }
-                    }
-                }
-            }
-
-            for (int l = 0; l < CUBE_WIDTH; ++l){
-                led_update(l);
-            }
+            CDC_Control_FS(localBuffer[0], &localBuffer[1],
+                           Get_Data_Size_From_CMD(localBuffer[0]));
 
         } /* End of else statement (Buffer received) */
 
@@ -461,9 +438,48 @@ static int8_t CDC_DeInit_FS(void)
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
     /* USER CODE BEGIN 5 */
+    bool actualBit;
+    uint8_t x = 0, y = 0, z = 0;
+
     switch (cmd)
     {
     case CDC_DISPLAY_CUBE:
+
+        for (int i = 0; i < length; ++i) {
+            for (int j = 0; j < 8; ++j) {
+                actualBit = pbuf[i] & (1 << (7 - j));
+                led_set_state(x, y, z, actualBit);
+
+                z = (z + 1) % 9;
+                if (z == 0) {
+                    y = (y + 1) % 9;
+                    if (y == 0) {
+                        x = (x + 1) % 9;
+                        if (x == 0) {
+                            i = 92;
+                            j = 8;
+                        }
+                    }
+                }
+            }
+        }
+
+        /* Update all layers to print the LEDs */
+        for (int l = 0; l < CUBE_WIDTH; ++l){
+            led_update(l);
+        }
+
+        break;
+
+    case CDC_FIRMWARE_UPDATE:
+        /* The CCube_Firmware.bin can be found in pbuf[1..length] */
+        /* TODO: Place .bin into bootloader to actually make the upgrade */
+        break;
+
+    case CDC_GET_LED_STATUS:
+        break;
+
+    case CDC_PRINT_MSG:
         break;
 
     default:
@@ -545,7 +561,7 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
  *         Checks if a CMD is known
  *
  * @param  CMD: CMD to check
- * @retval Return true if the CMD is known, false otherwise
+ * @retval Result of the operation: true if the CMD is known, false otherwise
  */
 static bool Is_CMD_Known(uint8_t CMD)
 {
@@ -559,19 +575,38 @@ static bool Is_CMD_Known(uint8_t CMD)
 
 
 /**
- * @brief  Is_CMD_Known
- *         Checks if a CMD is known
+ * @brief  Get_Buffer_Size_From_CMD
+ *         Gets buffer size for a specific command
  *
- * @param  CMD: CMD to check
- * @retval Return true if the CMD is known, false otherwise
+ * @param  CMD: specific command
+ * @retval Result of the operation: buffer size if CMD is known, 0 otherwise
  */
-static uint16_t Get_Size_Buffer_From_CMD(uint8_t CMD) {
+static uint16_t Get_Buffer_Size_From_CMD(uint8_t CMD) {
 
     switch(CMD) {
     case CDC_DISPLAY_CUBE:
         return 64;
     case CDC_RESET_RECEPTION:
         return 7;
+    default:
+        return 0;
+    }
+}
+
+
+
+/**
+ * @brief  Get_Data_Size_From_CMD
+ *         Gets data size for a specific command
+ *
+ * @param  CMD: specific command
+ * @retval Result of the operation: data size if CMD is known, 0 otherwise
+ */
+static uint16_t Get_Data_Size_From_CMD(uint8_t CMD) {
+
+    switch(CMD) {
+    case CDC_DISPLAY_CUBE:
+        return 92;
     default:
         return 0;
     }

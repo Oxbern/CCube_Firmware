@@ -76,12 +76,12 @@ extern void StartCDCReceptionTask(void const * argument);
 osThreadId CDC_ackTransmissionTaskHandle;
 extern void StartCDCAckTransmissionTask(void const * argument);
 
-osThreadId CDC_displayTaskHandle;
-extern void StartCDCDisplayTask(void const * argument);
+osThreadId CDC_controlTaskHandle;
+extern void StartCDCControlTask(void const * argument);
 
 
 QueueHandle_t receptionQueue = 0;
-QueueHandle_t displayQueue = 0;
+QueueHandle_t controlQueue = 0;
 
 /**
  * FreeRTOS Initialisation function
@@ -119,14 +119,14 @@ void StartInitTask(void const * argument)
     osThreadDef(cdcReceptionTask, StartCDCReceptionTask, osPriorityNormal, 0, 8192);
 	CDC_receptionTaskHandle = osThreadCreate(osThread(cdcReceptionTask), NULL);
 
-	osThreadDef(cdcDisplayTask, StartCDCDisplayTask, osPriorityNormal, 0, 8192);
-	CDC_displayTaskHandle = osThreadCreate(osThread(cdcDisplayTask), NULL);
+	osThreadDef(cdcControlTask, StartCDCControlTask, osPriorityNormal, 0, 8192);
+	CDC_controlTaskHandle = osThreadCreate(osThread(cdcControlTask), NULL);
 
 
     /* Create queues which can store up to 500 buffers */
 	receptionQueue = xQueueCreate(100, CDC_BUFFER_SIZE*sizeof(uint8_t));
 
-	displayQueue = xQueueCreate(100, CDC_MAX_DATA_SIZE*sizeof(uint8_t));
+	controlQueue = xQueueCreate(100, CDC_MAX_DATA_SIZE*sizeof(uint8_t));
 
 	vTaskDelete(initTaskHandle);
 }
