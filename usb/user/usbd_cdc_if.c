@@ -114,7 +114,7 @@ uint16_t UserRxBufferFS_Current_Index;
 #define ACK_SIZE 10
 #define CRC_SIZE 2
 #define ENCAPSULATION_SIZE 7
-
+#define MAX_RESPONSE_SIZE 10
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -139,6 +139,10 @@ static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 static void StoreDataUntilHandling(uint8_t *buff_RX);
 static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
                         uint16_t Current_Size_Left);
+
+static bool CMD_Require_Imm_Response(uint8_t CMD);
+static uint16_t Response_Size(uint8_t CMD);
+static uint8_t *Set_Imm_Response(uint8_t CMD);
 
 void StartCDCReceptionTask(void const *argument);
 
@@ -231,7 +235,8 @@ void StartCDCReceptionTask(void const *argument)
 {
     uint8_t Current_CMD = 0;
     int16_t Current_Size_Left = 0;
-    uint8_t *ackBuffer;
+    static uint8_t ackBuffer[ACK_SIZE];
+    static uint8_t responseBuffer[MAX_RESPONSE_SIZE];
 
 
     while (1) {
@@ -256,9 +261,9 @@ void StartCDCReceptionTask(void const *argument)
                         Current_CMD = 0;
                         Current_Size_Left = 0;
 
-                        /* /\* Set ACK OK *\/ */
-                        ackBuffer = Set_ACK(ACK_OK, Current_CMD,
-                                            Current_Size_Left);
+                        /* /\* /\\* Set ACK OK *\\/ *\/ */
+                        /* ackBuffer = Set_ACK(ACK_OK, Current_CMD, */
+                        /*                     Current_Size_Left); */
 
                         /* send the ACK over USB */
                         while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -269,9 +274,9 @@ void StartCDCReceptionTask(void const *argument)
                     /* Check if buffer are missing */
                     if (Current_Size_Left) {
 
-                        /* Set ACK NOK */
-                        ackBuffer = Set_ACK(ACK_NOK, Current_CMD,
-                                            Current_Size_Left);
+                        /* /\* Set ACK NOK *\/ */
+                        /* ackBuffer = Set_ACK(ACK_NOK, Current_CMD, */
+                        /*                     Current_Size_Left); */
 
                         /* send the ACK over USB */
                         while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -289,9 +294,9 @@ void StartCDCReceptionTask(void const *argument)
                     uint16_t size_buff = (transmitBuffer[SIZE_INDEX] << 8)
                         + transmitBuffer[SIZE_INDEX + 1];
 
-                    /* Set ACK NOK */
-                    ackBuffer = Set_ACK(ACK_NOK, Current_CMD,
-                                        size_buff);
+                    /* /\* Set ACK NOK *\/ */
+                    /* ackBuffer = Set_ACK(ACK_NOK, Current_CMD, */
+                    /*                     size_buff); */
 
                     /* send the ACK over USB */
                     while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -312,9 +317,9 @@ void StartCDCReceptionTask(void const *argument)
 
                 if (computedCRC != retrievedCRC) {
 
-                    /* Set ACK ERR */
-                    ackBuffer = Set_ACK(ACK_ERR, Current_CMD,
-                                        Current_Size_Left);
+                    /* /\* Set ACK ERR *\/ */
+                    /* ackBuffer = Set_ACK(ACK_ERR, Current_CMD, */
+                    /*                     Current_Size_Left); */
 
                     /* send the ACK over USB */
                     while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -328,9 +333,9 @@ void StartCDCReceptionTask(void const *argument)
                     Current_Size_Left != (transmitBuffer[SIZE_INDEX] << 8)
                     + transmitBuffer[SIZE_INDEX + 1]) {
 
-                    /* /\* Set ACK NOK *\/ */
-                    ackBuffer = Set_ACK(ACK_NOK, Current_CMD,
-                                        Current_Size_Left);
+                    /* /\* /\\* Set ACK NOK *\\/ *\/ */
+                    /* ackBuffer = Set_ACK(ACK_NOK, Current_CMD, */
+                    /*                     Current_Size_Left); */
 
                     /* send the ACK over USB */
                     while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
@@ -339,18 +344,35 @@ void StartCDCReceptionTask(void const *argument)
                 }
                 /* CMDs and Sizes match */
 
-                /* Set ACK OK */
-                ackBuffer = Set_ACK(ACK_OK, Current_CMD,
-                                    Current_Size_Left);
+                if (CMD_Require_Imm_Response(transmitBuffer[CMD_INDEX])) {
 
-                /* send the ACK over USB */
-                while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
+                    memcpy(responseBuffer,
+                           Set_Imm_Response(transmitBuffer[CMD_INDEX]),
+                           MAX_RESPONSE_SIZE);
 
-                /* All good -> store data until message is complete */
-                StoreDataUntilHandling(&transmitBuffer[0]);
+                    while (CDC_Transmit_FS(&responseBuffer[0],
+                                           Response_Size(transmitBuffer[CMD_INDEX])
+                                           != USBD_OK));
+
+                } else {
+
+                    /* Set ACK OK */
+                    memcpy(&ackBuffer[0],
+                           Set_ACK(ACK_OK, Current_CMD,
+                                   Current_Size_Left), ACK_SIZE);
+
+                    /* send the ACK over USB */
+                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
+
+                    /* All good -> store data until message is complete */
+                    StoreDataUntilHandling(&transmitBuffer[0]);
+                }
 
                 /* Update Current_Size_Left */
-                Current_Size_Left = MAX(0, (Current_Size_Left - 57));
+                Current_Size_Left =
+                    MAX(0, (Current_Size_Left -
+                           Get_Buffer_Size_From_CMD(transmitBuffer[CMD_INDEX])
+                            + ENCAPSULATION_SIZE));
 
 
             } else {
@@ -480,6 +502,9 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
         break;
 
     case CDC_PRINT_MSG:
+        break;
+
+    case CDC_SET_LUMINOSITY:
         break;
 
     default:
@@ -631,10 +656,66 @@ static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
     ackBuffer[8] = crc >> 8;
     ackBuffer[9] = crc & 0xFF;
 
-    return ackBuffer;
+    return &ackBuffer[0];
 }
 
 
+static bool CMD_Require_Imm_Response(uint8_t CMD)
+{
+    if (CMD == CDC_GET_DEVICE_ID ||
+        CMD == CDC_GET_LED_STATUS ||
+        CMD == CDC_GET_LUMINOSITY ||
+        CMD == CDC_GET_SCREEN_SIZE ||
+        CMD == CDC_GET_FIRMWARE_VERSION ||
+        CMD == CDC_GET_INFO) {
+
+        return true;
+    }
+
+    return false;
+}
+
+static uint16_t Response_Size(uint8_t CMD)
+{
+    switch (CMD) {
+    case CDC_GET_DEVICE_ID:
+        return 8;
+    case CDC_GET_LED_STATUS:
+        return 7;
+    case CDC_GET_LUMINOSITY:
+        return 8;
+    case CDC_GET_SCREEN_SIZE:
+        return 10;
+    case CDC_GET_FIRMWARE_VERSION:
+        return 8;
+    case CDC_GET_INFO:
+        return 10;
+    }
+
+    return 0;
+}
+
+static uint8_t *Set_Imm_Response(uint8_t CMD)
+{
+    static uint8_t response[MAX_RESPONSE_SIZE];
+
+    switch (CMD) {
+    case CDC_GET_DEVICE_ID:
+        return response;
+    case CDC_GET_LED_STATUS:
+        return response;
+    case CDC_GET_LUMINOSITY:
+        return response;
+    case CDC_GET_SCREEN_SIZE:
+        return response;
+    case CDC_GET_FIRMWARE_VERSION:
+        return response;
+    case CDC_GET_INFO:
+        return response;
+    }
+
+    return NULL;
+}
 
 /**
  * @}
