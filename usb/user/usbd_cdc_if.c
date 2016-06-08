@@ -381,13 +381,13 @@ void StartCDCReceptionTask(void const *argument)
 
                 } else {
 #if SEND_ACK
-                    /* Set ACK OK */
+                    /* Set ACK NOK */
                     memcpy(&ackBuffer[0],
                            Set_ACK(ACK_OK, Current_CMD,
                                    Current_Size_Left), ACK_SIZE);
 
                     /* send the ACK over USB */
-                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
+                    while (CDC_Transmit_FS(&mockAckBuffer[0], ACK_SIZE) != USBD_OK);
 #endif
                     /* All good -> store data until message is complete */
                     StoreDataUntilHandling(&transmitBuffer[0]);
@@ -398,7 +398,6 @@ void StartCDCReceptionTask(void const *argument)
                     MAX(0, (Current_Size_Left -
                            Get_Buffer_Size_From_CMD(transmitBuffer[CMD_INDEX])
                             + ENCAPSULATION_SIZE));
-
 
             } else {
 
@@ -719,7 +718,7 @@ static uint16_t Response_Size(uint8_t CMD)
         return 10;
     }
 
-    return 0;
+    return ENCAPSULATION_SIZE;
 }
 
 static uint8_t *Set_Imm_Response(uint8_t CMD)
