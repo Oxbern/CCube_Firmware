@@ -121,7 +121,18 @@ static uint8_t MOCK_LUMINOSITY = 0x80;
 #define ACK_SIZE 10
 #define CRC_SIZE 2
 #define ENCAPSULATION_SIZE 7
-#define MAX_RESPONSE_SIZE 10
+#define MAX_RESPONSE_SIZE 64
+
+uint16_t PRINT_MSG_SIZE = 64;
+
+/* Response buffer size */
+#define DEVICE_ID_SIZE 8
+#define LED_STATUS_SIZE 7
+#define LUMINOSITY_SIZE 8
+#define SCREEN_SIZE_SIZE 10
+#define FIRMWARE_VERSION_SIZE 8
+#define INFO_SIZE 10
+
 
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
@@ -130,7 +141,7 @@ USBD_HandleTypeDef  *hUsbDevice_0;
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
 #define DEBUG 0
-#define SEND_ACK 0
+#define SEND_ACK 1
 
 /**
  * @}
@@ -205,6 +216,11 @@ static void StoreDataUntilHandling(uint8_t *buff_RX)
         /* Retrieve number of bytes to be received */
         localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
             + (buff_RX[SIZE_INDEX] << 8);
+
+        if (buff_RX[CMD_INDEX] == CDC_PRINT_MSG) {
+            PRINT_MSG_SIZE = localBuffer_Bytes_To_Be_Received;
+        }
+
     }
 
 
@@ -387,7 +403,7 @@ void StartCDCReceptionTask(void const *argument)
                                    Current_Size_Left), ACK_SIZE);
 
                     /* send the ACK over USB */
-                    while (CDC_Transmit_FS(&mockAckBuffer[0], ACK_SIZE) != USBD_OK);
+                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
 #endif
                     /* All good -> store data until message is complete */
                     StoreDataUntilHandling(&transmitBuffer[0]);
@@ -437,7 +453,7 @@ void StartCDCControlTask(void const *argument)
 
     } /* End of infinite loop */
 
-} /* End of display task */
+} /* End of control task */
 
 
 /**
@@ -486,6 +502,7 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
     /* USER CODE BEGIN 5 */
     bool actualBit;
     uint8_t x = 0, y = 0, z = 0;
+    char msg[length];
 
     switch (cmd)
     {
@@ -522,11 +539,10 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
         /* TODO: Place .bin into bootloader to actually make the upgrade */
         break;
 
-    case CDC_GET_LED_STATUS:
-        /* TODO */
-        break;
-
     case CDC_PRINT_MSG:
+        memcpy(msg, pbuf, length);
+
+        printf("%s", msg);
         break;
 
     case CDC_SET_LUMINOSITY:
@@ -658,6 +674,8 @@ static uint16_t Get_Data_Size_From_CMD(uint8_t CMD) {
     switch(CMD) {
     case CDC_DISPLAY_CUBE:
         return 92;
+    case CDC_PRINT_MSG:
+        return PRINT_MSG_SIZE;
     default:
         return 0;
     }
@@ -705,17 +723,17 @@ static uint16_t Response_Size(uint8_t CMD)
 {
     switch (CMD) {
     case CDC_GET_DEVICE_ID:
-        return 8;
+        return DEVICE_ID_SIZE;
     case CDC_GET_LED_STATUS:
-        return 7;
+        return LED_STATUS_SIZE;
     case CDC_GET_LUMINOSITY:
-        return 8;
+        return LUMINOSITY_SIZE;
     case CDC_GET_SCREEN_SIZE:
-        return 10;
+        return SCREEN_SIZE_SIZE;
     case CDC_GET_FIRMWARE_VERSION:
-        return 8;
+        return FIRMWARE_VERSION_SIZE;
     case CDC_GET_INFO:
-        return 10;
+        return INFO_SIZE;
     }
 
     return ENCAPSULATION_SIZE;
