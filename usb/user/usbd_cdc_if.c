@@ -90,11 +90,13 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 /* Send Data over USB CDC are stored in this buffer       */
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
-uint16_t UserRxBufferFS_Current_Index;
 
+
+/* User variables */
 
 #define MyID 1
 
+/* Mock variables */
 static uint8_t MOCK_LUMINOSITY = 0x80;
 
 #define MOCK_SCREEN_SIZE_X 0x07
@@ -108,10 +110,11 @@ static uint8_t MOCK_LUMINOSITY = 0x80;
 #define CMD_INDEX (ID_INDEX + 1)
 #define SIZE_INDEX (CMD_INDEX + 1)
 #define DATA_INDEX (SIZE_INDEX + 2)
-#define CRC_INDEX 62
 
+/* Receive buffer macro */
 #define BEGINNING_DATA 0x01
 #define RETRANSMIT_BUFFER 0x02
+
 /* ACK opCode */
 #define ACK_OK 0x01
 #define ACK_ERR 0x02
@@ -123,9 +126,23 @@ static uint8_t MOCK_LUMINOSITY = 0x80;
 #define ENCAPSULATION_SIZE 7
 #define MAX_RESPONSE_SIZE 10
 
+
 uint16_t PRINT_MSG_SIZE = 64;
 
+
+/* Buffer representing q cross */
+uint8_t crossBuffer[93] = {0x21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                           0, 4, 17, 16, 80, 16, 20, 17, 16, 64, 0, 2, 8,
+                           136, 40, 8, 10, 8, 136, 32, 0, 1, 4, 68, 20, 4,
+                           5, 4, 68, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                           0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                           0, 0, 0, 0};
+
+
+
 /* Response buffer size */
+/* Not used (yet) */
 #define DEVICE_ID_SIZE 8
 #define LED_STATUS_SIZE 7
 #define LUMINOSITY_SIZE 8
@@ -134,14 +151,17 @@ uint16_t PRINT_MSG_SIZE = 64;
 #define INFO_SIZE 10
 
 
+/* Don't send ACK unless user ask to */
+uint8_t SEND_ACK = 0;
+
+
+
 /* USB handler declaration */
 /* Handle for USB Full Speed IP */
 USBD_HandleTypeDef  *hUsbDevice_0;
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
-#define DEBUG 0
-#define SEND_ACK 1
 
 /**
  * @}
@@ -155,24 +175,26 @@ static int8_t CDC_DeInit_FS   (void);
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 
-static void StoreDataUntilHandling(uint8_t *buff_RX);
-static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
-                        uint16_t Current_Size_Left);
 
-static bool CMD_Require_Imm_Response(uint8_t CMD);
-static uint16_t Response_Size(uint8_t CMD);
-static uint8_t *Set_Imm_Response(uint8_t CMD);
-
+/* Tasks */
 void StartCDCReceptionTask(void const *argument);
-
 void StartCDCControlTask(void const *argument);
 
 
-
 /* Helpers */
+static void StoreDataUntilHandling(uint8_t *buff_RX);
+static void sendACK(uint8_t ackType, uint8_t CMD, uint16_t size);
 static bool Is_CMD_Known(uint8_t CMD);
+static bool CMD_Require_Imm_Response(uint8_t CMD);
 static uint16_t Get_Buffer_Size_From_CMD(uint8_t CMD);
 static uint16_t Get_Data_Size_From_CMD(uint8_t CMD);
+static uint8_t *Set_Imm_Response(uint8_t CMD);
+static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
+                        uint16_t Current_Size_Left);
+
+
+
+
 
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 {
@@ -182,279 +204,9 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
     CDC_Receive_FS
 };
 
+
+
 /* Private functions ---------------------------------------------------------*/
-
-/**
- * @brief  SaveBufferUntilHandle
- *         Recovers data and store them into a localBuffer
- *         When full, sends data to the controller
- * @param buff_RX: Buffer received over USB
- */
-static void StoreDataUntilHandling(uint8_t *buff_RX)
-{
-    /* Store up to 10 buffers */
-    static uint8_t localBuffer[CDC_MAX_DATA_SIZE];
-    static uint16_t localBuffer_Current_Index;
-    static uint16_t localBuffer_Bytes_To_Be_Received;
-
-    uint16_t buff_RX_Index = DATA_INDEX;
-
-
-    if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
-
-        /* Clear local buffer */
-        for (int i = 0; i < CDC_MAX_DATA_SIZE; ++i) {
-            localBuffer[i] = 0;
-        }
-
-        /* Set the index of local buffer to 0 */
-        localBuffer_Current_Index = 0;
-
-        /* Current CMD is stored */
-        localBuffer[localBuffer_Current_Index++] = buff_RX[CMD_INDEX];
-
-        /* Retrieve number of bytes to be received */
-        localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
-            + (buff_RX[SIZE_INDEX] << 8);
-
-        if (buff_RX[CMD_INDEX] == CDC_PRINT_MSG) {
-            PRINT_MSG_SIZE = localBuffer_Bytes_To_Be_Received;
-        }
-
-    }
-
-
-    while (buff_RX_Index < CRC_INDEX
-           && localBuffer_Bytes_To_Be_Received > 0) {
-        /* Copy value in local buffer */
-        localBuffer[localBuffer_Current_Index++] = buff_RX[buff_RX_Index++];
-
-            /* Update control variable */
-        localBuffer_Bytes_To_Be_Received--;
-    }
-
-    if (localBuffer_Bytes_To_Be_Received == 0
-        && localBuffer_Current_Index > 0) {
-
-        /* Send the data into the transmission queue */
-        xQueueSend(controlQueue, &localBuffer[0], 0);
-
-        /* Set the index back to 0 */
-        localBuffer_Current_Index = 0;
-
-        /* Wait for another buffer before sending a message to update task */
-        localBuffer_Bytes_To_Be_Received = 1;
-    }
-
-} /* End of reception task */
-
-
-/**
- * @brief  StartCDCReceptionTransmissionTask
- *         Recovers data over reception queue (sent by CDC_Receive_FS)
- *         And sends ack back over USB connection
- * @param  argument: default argument for task (NULL here)
- */
-void StartCDCReceptionTask(void const *argument)
-{
-    uint8_t Current_CMD = 0;
-    int16_t Current_Size_Left = 0;
-    static uint8_t ackBuffer[ACK_SIZE];
-    static uint8_t responseBuffer[MAX_RESPONSE_SIZE];
-
-
-    while (1) {
-
-        /* Local buffer to store buffer found in queue */
-        uint8_t transmitBuffer[CDC_BUFFER_SIZE];
-
-        /* Receive buffer send over ack queue */
-        if (xQueueReceive(receptionQueue, &transmitBuffer[0], 0) != pdTRUE){
-            /* Handle error */
-        } else {
-
-            /* Check if CMD is known */
-            if (Is_CMD_Known(transmitBuffer[CMD_INDEX]) &&
-                transmitBuffer[ID_INDEX] == MyID) {
-
-                /* Buffer is the beginning of a message */
-                if (transmitBuffer[BEGINNING_INDEX] == BEGINNING_DATA) {
-
-                    /* If buffer ask to reset the reception then reset */
-                    if (transmitBuffer[CMD_INDEX] == CDC_RESET_RECEPTION) {
-                        Current_CMD = 0;
-                        Current_Size_Left = 0;
-
-#if SEND_ACK
-                        /* Set ACK OK */
-                        memcpy(&ackBuffer[0],
-                               Set_ACK(ACK_OK, Current_CMD,
-                                       Current_Size_Left), ACK_SIZE);
-
-                        /* send the ACK over USB */
-                        while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
-#endif
-                        /* Wait for another buffer */
-                        continue;
-                    }
-
-                    /* Check if buffer are missing */
-                    if (Current_Size_Left) {
-#if SEND_ACK
-                        /* Set ACK NOK */
-                        memcpy(&ackBuffer[0],
-                               Set_ACK(ACK_NOK, Current_CMD,
-                                       Current_Size_Left), ACK_SIZE);
-
-                        /* send the ACK over USB */
-                        while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
-#endif
-                        /* Wait for another buffer */
-                        continue;
-                    }
-
-                    /* New message: Current _Size_Left == 0 */
-                    Current_CMD = transmitBuffer[CMD_INDEX];
-                    Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
-                        + transmitBuffer[SIZE_INDEX + 1];
-
-                } else if (transmitBuffer[BEGINNING_INDEX] == RETRANSMIT_BUFFER) {
-
-#if SEND_ACK
-                    uint16_t size_buff = (transmitBuffer[SIZE_INDEX] << 8)
-                        + transmitBuffer[SIZE_INDEX + 1];
-
-                    /* Set ACK NOK */
-                    memcpy(&ackBuffer[0],
-                           Set_ACK(ACK_NOK, Current_CMD,
-                                   size_buff), ACK_SIZE);
-
-                    /* send the ACK over USB */
-                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
-#endif
-                    /* Wait for another buffer */
-                    continue;
-                }
-
-
-/*                 /\* Check if CRCs match *\/ */
-/*                 uint16_t computedCRC = computeCRC(&transmitBuffer[0], */
-/*                                                   (Get_Buffer_Size_From_CMD( */
-/*                                                       transmitBuffer[CMD_INDEX]) */
-/*                                                    - CRC_SIZE) */
-/*                                                   *sizeof(uint8_t)); */
-
-/*                 uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8) */
-/*                     + transmitBuffer[CRC_INDEX + 1]; */
-
-/*                 if (computedCRC != retrievedCRC) { */
-/* #if SEND_ACK */
-/*                     /\* Set ACK ERR *\/ */
-/*                     memcpy(&ackBuffer[0], */
-/*                            Set_ACK(ACK_ERR, Current_CMD, */
-/*                                    Current_Size_Left), ACK_SIZE); */
-
-/*                     /\* send the ACK over USB *\/ */
-/*                     while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK); */
-/* #endif */
-/*                     /\* Wait for another buffer *\/ */
-/*                     continue; */
-/*                 } */
-/*                 /\* CRCs match *\/ */
-
-
-                /* Check if CMDs and Size_Lefts match  */
-                if (Current_CMD != transmitBuffer[CMD_INDEX] ||
-                    Current_Size_Left != (transmitBuffer[SIZE_INDEX] << 8)
-                    + transmitBuffer[SIZE_INDEX + 1]) {
-#if SEND_ACK
-                    /* Set ACK NOK */
-                    memcpy(&ackBuffer[0],
-                           Set_ACK(ACK_NOK, Current_CMD,
-                                   Current_Size_Left), ACK_SIZE);
-
-                    /* send the ACK over USB */
-                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
-#endif
-                    /* Wait for another buffer */
-                    continue;
-                }
-                /* CMDs and Sizes match */
-
-
-
-                /* Send either an immediate response or an ACK and store data */
-                if (CMD_Require_Imm_Response(transmitBuffer[CMD_INDEX])) {
-
-                    /* Set response buffer */
-                    memcpy(&responseBuffer[0],
-                           Set_Imm_Response(transmitBuffer[CMD_INDEX]),
-                           Response_Size(transmitBuffer[CMD_INDEX]));
-
-                    /* Then send it over USB */
-                    while (CDC_Transmit_FS(&responseBuffer[0],
-                                           Response_Size(transmitBuffer[CMD_INDEX]))
-                           != USBD_OK);
-
-                } else {
-#if SEND_ACK
-                    /* Set ACK NOK */
-                    memcpy(&ackBuffer[0],
-                           Set_ACK(ACK_OK, Current_CMD,
-                                   Current_Size_Left), ACK_SIZE);
-
-                    /* send the ACK over USB */
-                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
-#endif
-                    /* All good -> store data until message is complete */
-                    StoreDataUntilHandling(&transmitBuffer[0]);
-                }
-
-                /* Update Current_Size_Left */
-                Current_Size_Left =
-                    MAX(0, (Current_Size_Left -
-                           Get_Buffer_Size_From_CMD(transmitBuffer[CMD_INDEX])
-                            + ENCAPSULATION_SIZE));
-
-            } else {
-
-                /* Simple echo */
-                while (CDC_Transmit_FS(&transmitBuffer[0], 1) != USBD_OK);
-            }
-
-        } /* End of else statement (buffer received) */
-
-    } /* End of infinite loop */
-
-} /* End of ACK transmission task */
-
-
-
-/**
- * @brief  StartCDCControlTask
- *         Recovers data and execute what CMD ask to do
- *
- * @param  argument: default argument for task (NULL here)
- */
-void StartCDCControlTask(void const *argument)
-{
-    /* Infinite loop */
-    while (1) {
-        uint8_t localBuffer[CDC_MAX_DATA_SIZE] = {0};
-
-        /* Receive message send over transmission queue */
-        if (xQueueReceive(controlQueue, &localBuffer[0], 0) != pdTRUE){
-            /* Handle error */
-        } else {
-
-            CDC_Control_FS(localBuffer[0], &localBuffer[1],
-                           Get_Data_Size_From_CMD(localBuffer[0]));
-
-        } /* End of else statement (Buffer received) */
-
-    } /* End of infinite loop */
-
-} /* End of control task */
 
 
 /**
@@ -477,6 +229,7 @@ static int8_t CDC_Init_FS(void)
     /* USER CODE END 3 */
 }
 
+
 /**
  * @brief  CDC_DeInit_FS
  *         DeInitializes the CDC media low layer
@@ -489,6 +242,7 @@ static int8_t CDC_DeInit_FS(void)
     return (USBD_OK);
     /* USER CODE END 4 */
 }
+
 
 /**
  * @brief  CDC_Control_FS
@@ -622,7 +376,315 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 }
 
 
+
+
+
+/* Tasks definition */
+
+
+/**
+ * @brief  StartCDCReceptionTransmissionTask
+ *         Recovers data over reception queue (sent by CDC_Receive_FS)
+ *         And sends ack back over USB connection
+ * @param  argument: default argument for task (NULL here)
+ */
+void StartCDCReceptionTask(void const *argument)
+{
+    uint8_t Current_CMD = 0;
+    int16_t Current_Size_Left = 0;
+    static uint8_t responseBuffer[MAX_RESPONSE_SIZE];
+
+
+    while (1) {
+
+        /* Local buffer to store buffer found in queue */
+        uint8_t transmitBuffer[CDC_BUFFER_SIZE];
+
+        /* Receive buffer send over ack queue */
+        if (xQueueReceive(receptionQueue, &transmitBuffer[0], 0) != pdTRUE){
+            /* Handle error */
+        } else {
+
+            /* Check if CMD is known */
+            if (Is_CMD_Known(transmitBuffer[CMD_INDEX]) &&
+                transmitBuffer[ID_INDEX] == MyID) {
+
+                /* Buffer is the beginning of a message */
+                if (transmitBuffer[BEGINNING_INDEX] == BEGINNING_DATA) {
+
+                    /* If buffer ask to reset the reception then reset */
+                    if (transmitBuffer[CMD_INDEX] == CDC_RESET_RECEPTION) {
+
+                        Current_CMD = 0;
+                        Current_Size_Left = 0;
+
+                        /* Send ACK */
+                        sendACK(ACK_OK, Current_CMD, Current_Size_Left);
+
+                        /* Wait for another buffer */
+                        continue;
+
+                    } else if (transmitBuffer[CMD_INDEX] == CDC_ACK_SENDING) {
+
+                        SEND_ACK = transmitBuffer[DATA_INDEX];
+
+                        /* Send ACK */
+                        sendACK(ACK_OK, transmitBuffer[CMD_INDEX], 1);
+
+                        continue;
+                    }
+
+                    /* Check if buffer are missing */
+                    if (Current_Size_Left) {
+
+                        /* Send ACK */
+                        sendACK(ACK_NOK, Current_CMD, Current_Size_Left);
+
+                        if (!SEND_ACK) {
+                            xQueueSend(controlQueue, &crossBuffer[0], 0);
+                        }
+
+                        /* Wait for another buffer */
+                        continue;
+                    }
+
+                    /* New message: Current _Size_Left == 0 */
+                    Current_CMD = transmitBuffer[CMD_INDEX];
+                    Current_Size_Left = (transmitBuffer[SIZE_INDEX] << 8)
+                        + transmitBuffer[SIZE_INDEX + 1];
+
+                } else if (transmitBuffer[BEGINNING_INDEX] == RETRANSMIT_BUFFER) {
+
+                    uint16_t size_buff = (transmitBuffer[SIZE_INDEX] << 8)
+                        + transmitBuffer[SIZE_INDEX + 1];
+
+                    /* Send ACK */
+                    sendACK(ACK_NOK, Current_CMD, size_buff);
+
+                    if (!SEND_ACK) {
+                        xQueueSend(controlQueue, &crossBuffer[0], 0);
+                    }
+
+                    /* Wait for another buffer */
+                    continue;
+                }
+
+
+                /* Check if CRCs match */
+                uint16_t computedCRC = computeCRC(&transmitBuffer[0],
+                                                  (Get_Buffer_Size_From_CMD(
+                                                      transmitBuffer[CMD_INDEX])
+                                                   - CRC_SIZE)
+                                                  *sizeof(uint8_t));
+
+                uint16_t CRC_INDEX = (Get_Buffer_Size_From_CMD(
+                                          transmitBuffer[CMD_INDEX]) - CRC_SIZE);
+                uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8)
+                    + transmitBuffer[CRC_INDEX + 1];
+
+                if (computedCRC != retrievedCRC) {
+
+                    /* Send ACK */
+                    sendACK(ACK_ERR, Current_CMD, Current_Size_Left);
+
+                    if (!SEND_ACK) {
+                        xQueueSend(controlQueue, &crossBuffer[0], 0);
+                    }
+
+                    /* Wait for another buffer */
+                    continue;
+                }
+                /* CRCs match */
+
+
+                /* Check if CMDs and Size_Lefts match  */
+                if (Current_CMD != transmitBuffer[CMD_INDEX] ||
+                    Current_Size_Left != (transmitBuffer[SIZE_INDEX] << 8)
+                    + transmitBuffer[SIZE_INDEX + 1]) {
+
+                    /* Send ACK */
+                    sendACK(ACK_NOK, Current_CMD, Current_Size_Left);
+
+                    if (!SEND_ACK) {
+                        xQueueSend(controlQueue, &crossBuffer[0], 0);
+                    }
+
+                    /* Wait for another buffer */
+                    continue;
+                }
+                /* CMDs and Sizes match */
+
+
+
+                /* Send either an immediate response or an ACK and store data */
+                if (CMD_Require_Imm_Response(transmitBuffer[CMD_INDEX])) {
+
+                    /* Set response buffer */
+                    memcpy(&responseBuffer[0],
+                           Set_Imm_Response(transmitBuffer[CMD_INDEX]),
+                           MAX_RESPONSE_SIZE);
+
+                    /* Then send it over USB */
+                    while (CDC_Transmit_FS(&responseBuffer[0],
+                                           MAX_RESPONSE_SIZE) != USBD_OK);
+
+                } else {
+
+                    /* Send ACK */
+                    sendACK(ACK_NOK, Current_CMD, Current_Size_Left);
+
+                    if (!SEND_ACK) {
+                        xQueueSend(controlQueue, &crossBuffer[0], 0);
+                    }
+
+                    /* All good -> store data until message is complete */
+                    StoreDataUntilHandling(&transmitBuffer[0]);
+                }
+
+                /* Update Current_Size_Left */
+                Current_Size_Left =
+                    MAX(0, (Current_Size_Left - CDC_BUFFER_SIZE
+                            + ENCAPSULATION_SIZE));
+
+            } else {
+
+                /* Simple echo */
+                while (CDC_Transmit_FS(&transmitBuffer[0], 1) != USBD_OK);
+            }
+
+        } /* End of else statement (buffer received) */
+
+    } /* End of infinite loop */
+
+} /* End of ACK transmission task */
+
+
+
+
+/**
+ * @brief  StartCDCControlTask
+ *         Recovers data and execute what CMD ask to do
+ *
+ * @param  argument: default argument for task (NULL here)
+ */
+void StartCDCControlTask(void const *argument)
+{
+    /* Infinite loop */
+    while (1) {
+        uint8_t localBuffer[CDC_MAX_DATA_SIZE] = {0};
+
+        /* Receive message send over transmission queue */
+        if (xQueueReceive(controlQueue, &localBuffer[0], 0) != pdTRUE){
+            /* Handle error */
+        } else {
+
+            CDC_Control_FS(localBuffer[0], &localBuffer[1],
+                           Get_Data_Size_From_CMD(localBuffer[0]));
+
+        } /* End of else statement (Buffer received) */
+
+    } /* End of infinite loop */
+
+} /* End of control task */
+
+
+/* End of tasks definition */
+
+
 /* Helper */
+
+
+/**
+ * @brief  sendACK
+ *         If SEND_ACK is true, set ACK and send it over USB
+ *
+ * @param  ackType: ACK_OK, ACK_ERR or ACK_NOK
+ * @param  CMD: command used as data in ACK
+ * @param  size: size used as data in ACK
+ */
+static void sendACK(uint8_t ackType, uint8_t CMD, uint16_t size)
+{
+
+    static uint8_t ackBuffer[ACK_SIZE];
+
+    if (SEND_ACK) {
+        /* Set ACK */
+        memcpy(&ackBuffer[0], Set_ACK(ackType, CMD, size), ACK_SIZE);
+        /* send the ACK over USB */
+        while(CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
+    }
+}
+
+
+
+
+/**
+ * @brief  SaveBufferUntilHandle
+ *         Recovers data and store them into a localBuffer
+ *         When full, sends data to the controller
+ * @param buff_RX: Buffer received over USB
+ */
+static void StoreDataUntilHandling(uint8_t *buff_RX)
+{
+    /* Store up to 10 buffers */
+    static uint8_t localBuffer[CDC_MAX_DATA_SIZE];
+    static uint16_t localBuffer_Current_Index;
+    static uint16_t localBuffer_Bytes_To_Be_Received;
+
+    uint16_t buff_RX_Index = DATA_INDEX;
+
+
+    if (buff_RX[BEGINNING_INDEX] == BEGINNING_DATA) {
+
+        /* Clear local buffer */
+        for (int i = 0; i < CDC_MAX_DATA_SIZE; ++i) {
+            localBuffer[i] = 0;
+        }
+
+        /* Set the index of local buffer to 0 */
+        localBuffer_Current_Index = 0;
+
+        /* Current CMD is stored */
+        localBuffer[localBuffer_Current_Index++] = buff_RX[CMD_INDEX];
+
+        /* Retrieve number of bytes to be received */
+        localBuffer_Bytes_To_Be_Received = buff_RX[SIZE_INDEX + 1]
+            + (buff_RX[SIZE_INDEX] << 8);
+
+        if (buff_RX[CMD_INDEX] == CDC_PRINT_MSG) {
+            PRINT_MSG_SIZE = localBuffer_Bytes_To_Be_Received;
+        }
+
+    }
+
+    uint16_t CRC_INDEX = (Get_Buffer_Size_From_CMD(localBuffer[0]) - CRC_SIZE);
+
+    while (buff_RX_Index < CRC_INDEX
+           && localBuffer_Bytes_To_Be_Received > 0) {
+        /* Copy value in local buffer */
+        localBuffer[localBuffer_Current_Index++] = buff_RX[buff_RX_Index++];
+
+        /* Update control variable */
+        localBuffer_Bytes_To_Be_Received--;
+    }
+
+    if (localBuffer_Bytes_To_Be_Received == 0
+        && localBuffer_Current_Index > 0) {
+
+        /* Send the data into the transmission queue */
+        xQueueSend(controlQueue, &localBuffer[0], 0);
+
+        /* Set the index back to 0 */
+        localBuffer_Current_Index = 0;
+
+        /* Wait for another buffer before sending a message to update task */
+        localBuffer_Bytes_To_Be_Received = 1;
+    }
+
+}
+
+
+
 
 /**
  * @brief  Is_CMD_Known
@@ -633,15 +695,26 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
  */
 static bool Is_CMD_Known(uint8_t CMD)
 {
-    if (CMD == CDC_DISPLAY_CUBE
+    if (CMD == CDC_PRINT_MSG
+        || CMD == CDC_GET_DEVICE_ID
+        || CMD == CDC_GET_LUMINOSITY
+        || CMD == CDC_GET_SCREEN_SIZE
+        || CMD == CDC_GET_FIRMWARE_VERSION
+        || CMD == CDC_GET_INFO
+        || CMD == CDC_DISPLAY_CUBE
+        || CMD == CDC_SET_LUMINOSITY
+        || CMD == CDC_FIRMWARE_UPDATE
         || CMD == CDC_RESET_RECEPTION
-        || CMD == CDC_GET_INFO){
+        || CMD == CDC_ACK_SENDING
+        ){
 
         return true;
     }
 
     return false;
 }
+
+
 
 
 /**
@@ -656,12 +729,10 @@ static uint16_t Get_Buffer_Size_From_CMD(uint8_t CMD) {
     switch(CMD) {
     case CDC_DISPLAY_CUBE:
         return 64;
-    case CDC_RESET_RECEPTION:
-        return 7;
-    case CDC_GET_INFO:
-        return 7;
+    case CDC_SET_LUMINOSITY:
+        return 8;
     default:
-        return 0;
+        return ENCAPSULATION_SIZE;
     }
 }
 
@@ -687,6 +758,16 @@ static uint16_t Get_Data_Size_From_CMD(uint8_t CMD) {
 }
 
 
+
+/**
+ * @brief  Set_ACK
+ *         Set ACK buffer to be sent
+ *
+ * @param  Ack_Type: ACK_OK, ACK_ERR, ACK_NOK
+ * @param  Current_CMD: CMD to set in ACK bufer
+ * @param  Current_Size_Left: Size set in ACK buffer
+ * @retval Result of the operation: ACK buffer
+ */
 static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
                         uint16_t Current_Size_Left)
 {
@@ -709,6 +790,15 @@ static uint8_t *Set_ACK(uint8_t Ack_Type, uint8_t Current_CMD,
 }
 
 
+
+/**
+ * @brief  CMD_Require_Imm_Response
+ *         Checks if a CMD needs an immediate response
+ *
+ * @param  CMD: CMD to check
+ * @retval Result of the operation: true if the CMD needs an
+ *                                  immediate response, false otherwise
+ */
 static bool CMD_Require_Imm_Response(uint8_t CMD)
 {
     if (CMD == CDC_GET_DEVICE_ID ||
@@ -724,33 +814,20 @@ static bool CMD_Require_Imm_Response(uint8_t CMD)
     return false;
 }
 
-static uint16_t Response_Size(uint8_t CMD)
-{
-    switch (CMD) {
-    case CDC_GET_DEVICE_ID:
-        return DEVICE_ID_SIZE;
-    case CDC_GET_LED_STATUS:
-        return LED_STATUS_SIZE;
-    case CDC_GET_LUMINOSITY:
-        return LUMINOSITY_SIZE;
-    case CDC_GET_SCREEN_SIZE:
-        return SCREEN_SIZE_SIZE;
-    case CDC_GET_FIRMWARE_VERSION:
-        return FIRMWARE_VERSION_SIZE;
-    case CDC_GET_INFO:
-        return INFO_SIZE;
-    }
 
-    return ENCAPSULATION_SIZE;
-}
 
+
+/**
+ * @brief  Set_Imm_Response
+ *         Set response buffer to be sent
+ *
+ * @param  CMD: CMD to know what to respond
+ * @retval Result of the operation: ACK buffer
+ */
 static uint8_t *Set_Imm_Response(uint8_t CMD)
 {
     /* Create response buffer */
     static uint8_t response[MAX_RESPONSE_SIZE];
-
-    /* Get size for the buffer */
-    uint16_t responseSize = Response_Size(CMD);
 
     /* Set header */
     response[0] = 1;
@@ -758,7 +835,7 @@ static uint8_t *Set_Imm_Response(uint8_t CMD)
     response[2] = CMD;
     /* Size Response (< 255) */
     response[3] = 0;
-    response[4] = responseSize - ENCAPSULATION_SIZE;
+    response[4] = MAX_RESPONSE_SIZE - ENCAPSULATION_SIZE;
 
     switch (CMD) {
     case CDC_GET_DEVICE_ID:
@@ -787,9 +864,9 @@ static uint8_t *Set_Imm_Response(uint8_t CMD)
 
     /* Set CRC */
     uint16_t crc = computeCRC(&response[0],
-                              responseSize);
-    response[responseSize - 2] = crc >> 8;
-    response[responseSize - 1] = crc & 0xFF;
+                              (MAX_RESPONSE_SIZE - CRC_SIZE)*sizeof(uint8_t));
+    response[MAX_RESPONSE_SIZE - 2] = crc >> 8;
+    response[MAX_RESPONSE_SIZE - 1] = crc & 0xFF;
 
     return &response[0];
 }

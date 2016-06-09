@@ -81,6 +81,7 @@ extern "C" {
 #define CDC_SET_LUMINOSITY                          0x22
 #define CDC_FIRMWARE_UPDATE                         0x24
 
+#define CDC_ACK_SENDING                             0xF0
 #define CDC_RESET_RECEPTION                         0xFF
 
 
