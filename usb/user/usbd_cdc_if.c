@@ -121,7 +121,7 @@ static uint8_t MOCK_LUMINOSITY = 0x80;
 #define ACK_SIZE 10
 #define CRC_SIZE 2
 #define ENCAPSULATION_SIZE 7
-#define MAX_RESPONSE_SIZE 64
+#define MAX_RESPONSE_SIZE 10
 
 uint16_t PRINT_MSG_SIZE = 64;
 
@@ -337,30 +337,31 @@ void StartCDCReceptionTask(void const *argument)
                 }
 
 
-                /* Check if CRCs match */
-                uint16_t computedCRC = computeCRC(&transmitBuffer[0],
-                                                  (Get_Buffer_Size_From_CMD(
-                                                      transmitBuffer[CMD_INDEX])
-                                                   - CRC_SIZE)
-                                                  *sizeof(uint8_t));
+/*                 /\* Check if CRCs match *\/ */
+/*                 uint16_t computedCRC = computeCRC(&transmitBuffer[0], */
+/*                                                   (Get_Buffer_Size_From_CMD( */
+/*                                                       transmitBuffer[CMD_INDEX]) */
+/*                                                    - CRC_SIZE) */
+/*                                                   *sizeof(uint8_t)); */
 
-                uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8)
-                    + transmitBuffer[CRC_INDEX + 1];
+/*                 uint16_t retrievedCRC = (transmitBuffer[CRC_INDEX] << 8) */
+/*                     + transmitBuffer[CRC_INDEX + 1]; */
 
-                if (computedCRC != retrievedCRC) {
-#if SEND_ACK
-                    /* Set ACK ERR */
-                    memcpy(&ackBuffer[0],
-                           Set_ACK(ACK_ERR, Current_CMD,
-                                   Current_Size_Left), ACK_SIZE);
+/*                 if (computedCRC != retrievedCRC) { */
+/* #if SEND_ACK */
+/*                     /\* Set ACK ERR *\/ */
+/*                     memcpy(&ackBuffer[0], */
+/*                            Set_ACK(ACK_ERR, Current_CMD, */
+/*                                    Current_Size_Left), ACK_SIZE); */
 
-                    /* send the ACK over USB */
-                    while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK);
-#endif
-                    /* Wait for another buffer */
-                    continue;
-                }
-                /* CRCs match */
+/*                     /\* send the ACK over USB *\/ */
+/*                     while (CDC_Transmit_FS(&ackBuffer[0], ACK_SIZE) != USBD_OK); */
+/* #endif */
+/*                     /\* Wait for another buffer *\/ */
+/*                     continue; */
+/*                 } */
+/*                 /\* CRCs match *\/ */
+
 
                 /* Check if CMDs and Size_Lefts match  */
                 if (Current_CMD != transmitBuffer[CMD_INDEX] ||
@@ -386,14 +387,14 @@ void StartCDCReceptionTask(void const *argument)
                 if (CMD_Require_Imm_Response(transmitBuffer[CMD_INDEX])) {
 
                     /* Set response buffer */
-                    memcpy(responseBuffer,
+                    memcpy(&responseBuffer[0],
                            Set_Imm_Response(transmitBuffer[CMD_INDEX]),
-                           MAX_RESPONSE_SIZE);
+                           Response_Size(transmitBuffer[CMD_INDEX]));
 
                     /* Then send it over USB */
                     while (CDC_Transmit_FS(&responseBuffer[0],
-                                           Response_Size(transmitBuffer[CMD_INDEX])
-                                           != USBD_OK));
+                                           Response_Size(transmitBuffer[CMD_INDEX]))
+                           != USBD_OK);
 
                 } else {
 #if SEND_ACK
@@ -633,7 +634,9 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 static bool Is_CMD_Known(uint8_t CMD)
 {
     if (CMD == CDC_DISPLAY_CUBE
-        || CMD == CDC_RESET_RECEPTION){
+        || CMD == CDC_RESET_RECEPTION
+        || CMD == CDC_GET_INFO){
+
         return true;
     }
 
@@ -654,6 +657,8 @@ static uint16_t Get_Buffer_Size_From_CMD(uint8_t CMD) {
     case CDC_DISPLAY_CUBE:
         return 64;
     case CDC_RESET_RECEPTION:
+        return 7;
+    case CDC_GET_INFO:
         return 7;
     default:
         return 0;
@@ -753,7 +758,7 @@ static uint8_t *Set_Imm_Response(uint8_t CMD)
     response[2] = CMD;
     /* Size Response (< 255) */
     response[3] = 0;
-    response[4] = responseSize;
+    response[4] = responseSize - ENCAPSULATION_SIZE;
 
     switch (CMD) {
     case CDC_GET_DEVICE_ID:
