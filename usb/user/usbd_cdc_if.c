@@ -531,11 +531,7 @@ void StartCDCReceptionTask(void const *argument)
                 } else {
 
                     /* Send ACK */
-                    sendACK(ACK_NOK, Current_CMD, Current_Size_Left);
-
-                    if (!SEND_ACK) {
-                        xQueueSend(controlQueue, &crossBuffer[0], 0);
-                    }
+                    sendACK(ACK_OK, Current_CMD, Current_Size_Left);
 
                     /* All good -> store data until message is complete */
                     StoreDataUntilHandling(&transmitBuffer[0]);
